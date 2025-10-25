@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
-export type LearningPlanDocument = HydratedDocument<LearningPlanCollection>;
+export type LearningPlansDocument = HydratedDocument<LearningPlansCollection>;
 
 @Schema()
-export class LearningPlanCollection {
+export class LearningPlansCollection {
     @Prop()
     user_id: string;
 
@@ -42,4 +42,4 @@ export class LearningPlanCollection {
     updated_at: Date;
 }
 
-export const LearningPlanSchema = SchemaFactory.createForClass(LearningPlanCollection);
+export const LearningPlansSchema = SchemaFactory.createForClass(LearningPlansCollection);
