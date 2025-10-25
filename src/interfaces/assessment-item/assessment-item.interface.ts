@@ -1,4 +1,4 @@
-export interface AssessmentItems {
+export interface AssessmentItem {
     assessment_id: string;
     question: string;
     options: { option: string; content: string }[];

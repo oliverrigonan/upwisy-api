@@ -1,4 +1,4 @@
-export interface FileContents {
+export interface FileContent {
     file_id: string;
     content: string;
 }

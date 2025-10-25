@@ -1,4 +1,4 @@
-export interface Sessions {
+export interface Session {
     user_id: string;
     course_id: string;
     course_lesson_id: string;

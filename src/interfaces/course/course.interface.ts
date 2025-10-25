@@ -1,4 +1,4 @@
-export interface Courses {
+export interface Course {
     user_id: string;
     date: Date;
     title: string;

@@ -1,4 +1,4 @@
-export interface Files {
+export interface File {
     user_id: string;
     course_id: string;
     file_url: string;

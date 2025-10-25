@@ -1,4 +1,4 @@
-export interface Assessments {
+export interface Assessment {
     user_id: string;
     type: string;
     course_id: string;

@@ -1,4 +1,4 @@
-export interface LearningPlans {
+export interface LearningPlan {
     user_id: string;
     course_id: string;
     date: Date;
