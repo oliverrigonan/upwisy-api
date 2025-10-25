@@ -8,7 +8,7 @@ import { CourseLessonsCollection, CourseLessonsSchema } from './schemas/course-l
 import { CourseUsersCollection, CourseUsersSchema } from './schemas/course-users.schema';
 import { SessionsCollection, SessionsSchema } from './schemas/sessions.schema';
 import { FilesCollection, FilesSchema } from './schemas/files.schema';
-import { FileContentsCollection, FileContentsSchema } from './schemas/file-contents';
+import { FileContentsCollection, FileContentsSchema } from './schemas/file-contents.schema';
 import { LearningPlansCollection, LearningPlansSchema } from './schemas/learning-plans.schema';
 import { AssessmentsCollection, AssessmentsSchema } from './schemas/assessments.schema';
 import { AssessmentItemsCollection, AssessmentItemsSchema } from './schemas/assessment-items.schema';

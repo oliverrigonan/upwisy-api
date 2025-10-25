@@ -15,10 +15,7 @@ export class CourseUsersCollection {
     status: string;
 
     @Prop()
-    created_at: Date;
-
-    @Prop()
-    updated_at: Date;
+    enrolled_at: Date;
 }
 
 export const CourseUsersSchema = SchemaFactory.createForClass(CourseUsersCollection);
