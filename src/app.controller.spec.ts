@@ -15,8 +15,8 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return "Upwisy API Service is running"', () => {
+      expect(appController.getApi()).toBe('Upwisy API Service is running');
     });
   });
 });
