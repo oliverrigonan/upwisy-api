@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
 
 import { UsersCollection, UsersSchema } from './schemas/users.schema';
 import { CoursesCollection, CoursesSchema } from './schemas/courses.schema';
@@ -14,6 +16,7 @@ import { AssessmentsCollection, AssessmentsSchema } from './schemas/assessments.
 import { AssessmentItemsCollection, AssessmentItemsSchema } from './schemas/assessment-items.schema';
 
 import { AppController } from './app.controller';
+import { AuthController } from './controllers/auth/auth.controller';
 import { UsersController } from './controllers/users/users.controller';
 import { CoursesController } from './controllers/courses/courses.controller';
 import { CourseLessonsController } from './controllers/course-lessons/course-lessons.controller';
@@ -26,6 +29,8 @@ import { AssessmentsController } from './controllers/assessments/assessments.con
 import { AssessmentItemsController } from './controllers/assessment-items/assessment-items.controller';
 
 import { AppService } from './app.service';
+import { AuthService } from './services/auth/auth.service';
+import { GoogleAuthStrategyService } from './services/auth/google-auth-strategy/google-auth-strategy.service';
 import { UsersService } from './services/users/users.service';
 import { CoursesService } from './services/courses/courses.service';
 import { CourseLessonsService } from './services/course-lessons/course-lessons.service';
@@ -59,9 +64,15 @@ import { AssessmentItemsService } from './services/assessment-items/assessment-i
       { name: AssessmentsCollection.name, schema: AssessmentsSchema, collection: 'assessments' },
       { name: AssessmentItemsCollection.name, schema: AssessmentItemsSchema, collection: 'assessment_items' }
     ]),
+    PassportModule.register({ session: false }),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || '',
+      signOptions: { expiresIn: '1h' },
+    }),
   ],
   controllers: [
     AppController,
+    AuthController,
     UsersController,
     CoursesController,
     CourseLessonsController,
@@ -75,6 +86,8 @@ import { AssessmentItemsService } from './services/assessment-items/assessment-i
   ],
   providers: [
     AppService,
+    AuthService,
+    GoogleAuthStrategyService,
     UsersService,
     CoursesService,
     CourseLessonsService,
