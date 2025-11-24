@@ -10,6 +10,7 @@ async function bootstrap() {
     .setTitle('Upwisy API')
     .setDescription('The Upwisy API provides secure and scalable endpoints for managing users, courses, assessments, and learning progress.')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
@@ -17,4 +18,5 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
+
 bootstrap();
