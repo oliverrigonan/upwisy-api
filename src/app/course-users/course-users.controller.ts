@@ -9,7 +9,7 @@ import { CreateCourseUserDto } from './dto/create-course-user.dto';
 import { UpdateCourseUserDto } from './dto/update-course-user.dto';
 
 @ApiTags('Course Users')
-@Controller('course-users')
+@Controller('api/course-users')
 export class CourseUsersController {
 
   constructor(

@@ -6,7 +6,7 @@ import { AuthGuard } from './../auth/auth.http-guard';
 import { UsersService } from './users.service';
 
 @ApiTags('Users')
-@Controller('users')
+@Controller('api/users')
 export class UsersController {
 
   constructor(

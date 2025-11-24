@@ -9,7 +9,7 @@ import { CreateFileDto } from './dto/create-file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 
 @ApiTags('Files')
-@Controller('files')
+@Controller('api/files')
 export class FilesController {
 
   constructor(

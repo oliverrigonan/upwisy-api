@@ -9,7 +9,7 @@ import { CreateAssessmentItemDto } from './dto/create-assessment-item.dto';
 import { UpdateAssessmentItemDto } from './dto/update-assessment-item.dto';
 
 @ApiTags('Assessment Items')
-@Controller('assessment-items')
+@Controller('api/assessment-items')
 export class AssessmentItemsController {
 
   constructor(

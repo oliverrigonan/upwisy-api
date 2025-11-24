@@ -9,7 +9,7 @@ import { CreateFileContentDto } from './dto/create-file-content.dto';
 import { UpdateFileContentDto } from './dto/update-file-content.dto';
 
 @ApiTags('File Contents')
-@Controller('file-contents')
+@Controller('api/file-contents')
 export class FileContentsController {
 
   constructor(
