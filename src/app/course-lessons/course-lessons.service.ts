@@ -30,6 +30,12 @@ export class CourseLessonsService {
     return await this.courseLessonsModel.find().exec();
   }
 
+  async findByCourseId(course_id: string) {
+    return await this.courseLessonsModel.find({
+      course_id: course_id,
+    }).exec();
+  }
+
   async findOne(id: string) {
     return await this.courseLessonsModel.findById(id).exec();
   }

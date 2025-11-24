@@ -35,6 +35,12 @@ export class CoursesService {
     return await this.coursesModel.find().exec();
   }
 
+  async findByUserId(user_id: string) {
+    return await this.coursesModel.find({
+      user_id: user_id,
+    }).exec();
+  }
+
   async findOne(id: string) {
     return await this.coursesModel.findById(id).exec();
   }

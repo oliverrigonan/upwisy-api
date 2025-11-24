@@ -31,6 +31,12 @@ export class FilesService {
     return await this.filesModel.find().exec();
   }
 
+  async findByUserId(user_id: string) {
+    return await this.filesModel.find({
+      user_id: user_id,
+    }).exec();
+  }
+
   async findOne(id: string) {
     return await this.filesModel.findById(id).exec();
   }

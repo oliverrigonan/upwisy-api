@@ -40,6 +40,12 @@ export class AssessmentsService {
     return await this.assessmentsModel.find().exec();
   }
 
+  async findByUserId(user_id: string) {
+    return await this.assessmentsModel.find({
+      user_id: user_id,
+    }).exec();
+  }
+
   async findOne(id: string) {
     return await this.assessmentsModel.findById(id).exec();
   }

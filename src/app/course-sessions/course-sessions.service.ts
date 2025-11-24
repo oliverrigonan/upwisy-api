@@ -34,6 +34,12 @@ export class CourseSessionsService {
     return await this.courseSessionsModel.find().exec();
   }
 
+  async findByCourseId(course_id: string) {
+    return await this.courseSessionsModel.find({
+      course_id: course_id,
+    }).exec();
+  }
+
   async findOne(id: string) {
     return await this.courseSessionsModel.findById(id).exec();
   }

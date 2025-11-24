@@ -28,6 +28,12 @@ export class FileContentsService {
     return await this.fileContentsModel.find().exec();
   }
 
+  async findByFileId(file_id: string) {
+    return await this.fileContentsModel.find({
+      file_id: file_id,
+    }).exec();
+  }
+
   async findOne(id: string) {
     return await this.fileContentsModel.findById(id).exec();
   }

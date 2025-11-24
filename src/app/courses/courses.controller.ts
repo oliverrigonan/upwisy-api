@@ -43,6 +43,25 @@ export class CoursesController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
+  @Get('by-user-id/:user_id')
+  async findByUserId(@Param('user_id') user_id: string) {
+    const courses = await this.coursesService.findByUserId(user_id);
+    if (!courses || courses.length === 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No courses found for the specified user ID',
+          error: `No courses found with user ID ${user_id}.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return courses;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const course = await this.coursesService.findOne(id);

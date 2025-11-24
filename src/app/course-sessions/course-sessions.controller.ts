@@ -43,6 +43,25 @@ export class CourseSessionsController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
+  @Get('by-course-id/:course_id')
+  async findByCourseId(@Param('course_id') course_id: string) {
+    const courseSessions = await this.courseSessionsService.findByCourseId(course_id);
+    if (!courseSessions || courseSessions.length === 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No course sessions found for the specified course ID',
+          error: `No course sessions found with course ID ${course_id}.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return courseSessions;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const courseSession = await this.courseSessionsService.findOne(id);

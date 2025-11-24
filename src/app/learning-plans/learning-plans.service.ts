@@ -38,6 +38,23 @@ export class LearningPlansService {
     return await this.learningPlansModel.find().exec();
   }
 
+  async findByDate(date_string: string) {
+    const date = new Date(date_string);
+
+    const start = new Date(date.setUTCHours(0, 0, 0, 0));
+    const end = new Date(date.setUTCHours(23, 59, 59, 999));
+
+    return await this.learningPlansModel.find({
+      date: { $gte: start, $lte: end },
+    }).exec();
+  }
+
+  async findByUserId(user_id: string) {
+    return await this.learningPlansModel.find({
+      user_id: user_id,
+    }).exec();
+  }
+
   async findOne(id: string) {
     return await this.learningPlansModel.findById(id).exec();
   }

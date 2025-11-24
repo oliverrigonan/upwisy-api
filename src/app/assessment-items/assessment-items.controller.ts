@@ -43,6 +43,25 @@ export class AssessmentItemsController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
+  @Get('by-assessment-id/:assessment_id')
+  async findByAssessmentId(@Param('assessment_id') assessment_id: string) {
+    const assessmentItems = await this.assessmentItemsService.findByAssessmentId(assessment_id);
+    if (!assessmentItems || assessmentItems.length === 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No assessment items found for the specified assessment ID',
+          error: `No assessment items found with assessment ID ${assessment_id}.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return assessmentItems;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const assessmentItem = await this.assessmentItemsService.findOne(id);

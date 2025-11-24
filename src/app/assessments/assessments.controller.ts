@@ -43,6 +43,25 @@ export class AssessmentsController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
+  @Get('by-user-id/:user_id')
+  async findByUserId(@Param('user_id') user_id: string) {
+    const assessments = await this.assessmentsService.findByUserId(user_id);
+    if (!assessments || assessments.length === 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No assessments found for the specified user ID',
+          error: `No assessments found with user ID ${user_id}.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return assessments;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const assessment = await this.assessmentsService.findOne(id);

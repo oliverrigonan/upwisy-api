@@ -32,6 +32,12 @@ export class AssessmentItemsService {
     return await this.assessmentItemsModel.find().exec();
   }
 
+  async findByAssessmentId(assessment_id: string) {
+    return await this.assessmentItemsModel.find({
+      assessment_id: assessment_id,
+    }).exec();
+  }
+
   async findOne(id: string) {
     return await this.assessmentItemsModel.findById(id).exec();
   }
