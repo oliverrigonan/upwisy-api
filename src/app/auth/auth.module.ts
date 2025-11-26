@@ -37,7 +37,7 @@ import { UsersService } from '../users/users.service';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '60s' },
+        signOptions: { expiresIn: '1Week' },
       }),
     }),
     DatabaseModule

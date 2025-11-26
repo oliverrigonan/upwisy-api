@@ -15,6 +15,7 @@ import { AssessmentItemsModule } from './app/assessment-items/assessment-items.m
 import { FilesModule } from './app/files/files.module';
 import { FileContentsModule } from './app/file-contents/file-contents.module';
 import { LearningPlansModule } from './app/learning-plans/learning-plans.module';
+import { OpenaiModule } from './app/openai/openai.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { LearningPlansModule } from './app/learning-plans/learning-plans.module'
     FilesModule,
     FileContentsModule,
     LearningPlansModule,
+    OpenaiModule,
   ],
   controllers: [
     AppController,
