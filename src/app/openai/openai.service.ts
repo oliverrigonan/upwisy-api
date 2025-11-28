@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 
 import { firstValueFrom } from 'rxjs';
 
-import { SessionConfig } from './entities/realtime-api-calls.entity';
+import { SessionConfig } from './entities/openai-realtime.entity';
 
 import { OfferSDPDto } from './dto/offer-sdp.dto';
 
@@ -54,7 +54,7 @@ export class OpenaiService {
     tools: [],
   };
 
-  async createRealtimeApiSession(): Promise<string | null> {
+  async createRealtimeSession(): Promise<string | null> {
     const endpoint = `${process.env.OPENAI_API_BASE_URL}/realtime/client_secrets`;
     const headers = {
       'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ export class OpenaiService {
     return null;
   }
 
-  async getRealtimeApiSDPResponse(payload: OfferSDPDto): Promise<RTCSessionDescriptionInit> {
+  async getRealtimeSDPResponse(payload: OfferSDPDto): Promise<RTCSessionDescriptionInit> {
     const endpoint = `${process.env.OPENAI_API_BASE_URL}/realtime/calls`;
     const headers = {
       'Content-Type': 'application/sdp',

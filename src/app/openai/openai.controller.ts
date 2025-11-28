@@ -17,10 +17,10 @@ export class OpenaiController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Post("realtime-api/create-session")
-  async createRealtimeApiSession() {
+  @Post("realtime/create-session")
+  async createRealtimeSession() {
     try {
-      return await this.openaiService.createRealtimeApiSession();
+      return await this.openaiService.createRealtimeSession();
     } catch (error) {
       throw new HttpException(
         {
@@ -35,10 +35,10 @@ export class OpenaiController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Post("realtime-api/get-sdp-response")
-  async getRealtimeApiSDPResponse(@Body() payload: OfferSDPDto) {
+  @Post("realtime/get-sdp-response")
+  async getRealtimeSDPResponse(@Body() payload: OfferSDPDto) {
     try {
-      return await this.openaiService.getRealtimeApiSDPResponse(payload);
+      return await this.openaiService.getRealtimeSDPResponse(payload);
     } catch (error) {
       throw new HttpException(
         {
