@@ -5,7 +5,6 @@ import { AuthGuard } from './../auth/auth.http-guard';
 
 import { OpenaiService } from './openai.service';
 
-import { InitializeRealtimeApiSessionConfigDto } from './dto/init-realtime-api-session-config.dto';
 import { OfferSDPDto } from './dto/offer-sdp.dto';
 
 @ApiTags('Open AI')
@@ -18,17 +17,10 @@ export class OpenaiController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Post("realtime-api/generate-payload")
-  generateRealtimeApiPayload() {
-    return this.openaiService.generateRealtimeApiPayload();
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
   @Post("realtime-api/create-session")
-  async createRealtimeApiSession(@Body() payload: InitializeRealtimeApiSessionConfigDto) {
+  async createRealtimeApiSession() {
     try {
-      return await this.openaiService.createRealtimeApiSession(payload);
+      return await this.openaiService.createRealtimeApiSession();
     } catch (error) {
       throw new HttpException(
         {
