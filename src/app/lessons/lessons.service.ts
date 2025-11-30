@@ -20,7 +20,6 @@ export class LessonsService {
       title: createLessonDto.title,
       description: createLessonDto.description,
       lesson_number: createLessonDto.lesson_number,
-      outline: createLessonDto.outline,
       status: createLessonDto.status,
       created_at: new Date(),
       updated_at: new Date(),
@@ -49,7 +48,6 @@ export class LessonsService {
       title: updateLessonDto.title,
       description: updateLessonDto.description,
       lesson_number: updateLessonDto.lesson_number,
-      outline: updateLessonDto.outline,
       status: updateLessonDto.status,
       updated_at: new Date(),
     };

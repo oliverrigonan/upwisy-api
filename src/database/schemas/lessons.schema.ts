@@ -18,10 +18,6 @@ export const LessonsSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  outline: [{
-    type: String,
-    required: true,
-  }],
   status: {
     type: String,
     enum: ['pending', 'generating', 'ready'],

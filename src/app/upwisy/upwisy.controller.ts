@@ -20,7 +20,8 @@ export class UpwisyController {
   @Post("generate-course/from-subject")
   async generateCourseFromSubject(@Body() payload: GenerateCourseFromSubjectDto) {
     try {
-      return await this.upwisyService.generateCourseFromSubject(payload.subject);
+      await this.upwisyService.generateCourseFromSubject(payload.subject);
+      return { message: 'Course generation started' };
     } catch (error) {
       throw new HttpException(
         {
