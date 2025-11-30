@@ -17,11 +17,14 @@ export class AssessmentItemsService {
   async create(createAssessmentItemDto: CreateAssessmentItemDto) {
     const newAssessmentItem: AssessmentItem = {
       assessment_id: createAssessmentItemDto.assessment_id,
+      type: createAssessmentItemDto.type,
       question: createAssessmentItemDto.question,
       options: createAssessmentItemDto.options,
       correct_answer: createAssessmentItemDto.correct_answer,
       user_answer: createAssessmentItemDto.user_answer,
+      percentage_correct: createAssessmentItemDto.percentage_correct,
       is_correct: createAssessmentItemDto.is_correct,
+      answer_explanation: createAssessmentItemDto.answer_explanation,
     };
 
     const createdAssessmentItem = new this.assessmentItemsModel(newAssessmentItem);
@@ -44,11 +47,14 @@ export class AssessmentItemsService {
 
   update(id: string, updateAssessmentItemDto: UpdateAssessmentItemDto) {
     const updatedAssessmentItem: Partial<AssessmentItem> = {
+      type: updateAssessmentItemDto.type,
       question: updateAssessmentItemDto.question,
       options: updateAssessmentItemDto.options,
       correct_answer: updateAssessmentItemDto.correct_answer,
       user_answer: updateAssessmentItemDto.user_answer,
+      percentage_correct: updateAssessmentItemDto.percentage_correct,
       is_correct: updateAssessmentItemDto.is_correct,
+      answer_explanation: updateAssessmentItemDto.answer_explanation,
     };
 
     return this.assessmentItemsModel.findByIdAndUpdate(id, updatedAssessmentItem, { new: true }).exec();
