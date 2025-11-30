@@ -54,9 +54,9 @@ export class LessonSectionsService {
     return await this.lessonSectionsModel.find().exec();
   }
 
-  async findByUserId(user_id: string) {
+  async findByLessonId(lesson_id: string) {
     return await this.lessonSectionsModel.find({
-      user_id: user_id,
+      lesson_id: lesson_id,
     }).exec();
   }
 

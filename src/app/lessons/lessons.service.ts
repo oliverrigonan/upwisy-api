@@ -48,9 +48,9 @@ export class LessonsService {
     return await this.lessonsModel.find().exec();
   }
 
-  async findByUserId(user_id: string) {
+  async findByCourseId(course_id: string) {
     return await this.lessonsModel.find({
-      user_id: user_id,
+      course_id: course_id,
     }).exec();
   }
 

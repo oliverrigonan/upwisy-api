@@ -1,12 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthGuard } from './../auth/auth.http-guard';
 
 import { CoursesService } from './courses.service';
-
-import { CreateCourseDto } from './dto/create-course.dto';
-import { UpdateCourseDto } from './dto/update-course.dto';
 
 @ApiTags('Courses')
 @Controller('api/courses')
@@ -15,24 +12,6 @@ export class CoursesController {
   constructor(
     private readonly coursesService: CoursesService
   ) { }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Post()
-  async create(@Body() createCourseDto: CreateCourseDto) {
-    try {
-      return await this.coursesService.create(createCourseDto);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to create course',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
@@ -77,36 +56,6 @@ export class CoursesController {
     }
 
     return course;
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
-    try {
-      const course = await this.coursesService.findOne(id);
-      if (!course) {
-        throw new HttpException(
-          {
-            statusCode: HttpStatus.NOT_FOUND,
-            message: 'Course not found',
-            error: `The course with ID ${id} does not exist.`,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      return this.coursesService.update(id, updateCourseDto);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to update course',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
   }
 
   @ApiBearerAuth()

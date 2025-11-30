@@ -12,14 +12,17 @@ import { z } from "zod";
 import { GenerateCourseFromSubjectDto } from './dto/generate-course-from-subject.dto';
 import { GenerateCourseProgress } from './interfaces/generate-course-progress.interface';
 
+import { UsersService } from './../../users/users.service';
 import { CoursesService } from './../../courses/courses.service';
-import { LessonsService } from 'src/app/lessons/lessons.service';
-import { LessonSectionsService } from 'src/app/lesson-sections/lesson-sections.service';
-import { CreateCourseDto } from 'src/app/courses/dto/create-course.dto';
-import { CreateLessonDto } from 'src/app/lessons/dto/create-lesson.dto';
-import { CreateLessonSectionDto } from 'src/app/lesson-sections/dto/create-lesson-section.dto';
-import { UpdateLessonDto } from 'src/app/lessons/dto/update-lesson.dto';
-import { UsersService } from 'src/app/users/users.service';
+import { LessonsService } from './../../lessons/lessons.service';
+import { LessonSectionsService } from './../../lesson-sections/lesson-sections.service';
+
+import { CreateCourseDto } from './../../courses/dto/create-course.dto';
+import { UpdateCourseDto } from './../../courses/dto/update-course.dto';
+import { CreateLessonDto } from './../../lessons/dto/create-lesson.dto';
+import { UpdateLessonDto } from './../../lessons/dto/update-lesson.dto';
+import { CreateLessonSectionDto } from './../../lesson-sections/dto/create-lesson-section.dto';
+import { UpdateLessonSectionDto } from './../../lesson-sections/dto/update-lesson-section.dto';
 
 @UseGuards(AuthGuard)
 @WebSocketGateway(81, {
@@ -186,12 +189,22 @@ export class CourseGeneratorGateway {
 
           for (let i = 0; i < createdLessons.length; i++) {
             const lesson = createdLessons[i];
-            const lessonSections = createdLessonSections.filter(section => section.lesson_id.toString() === lesson.id.toString());
+
+            const updateLessonDto: Partial<UpdateLessonDto> = {
+              status: 'generating',
+            };
+            await this.lessonsService.update(lesson.id, updateLessonDto);
 
             let previousSummary = "";
 
+            const lessonSections = createdLessonSections.filter(section => section.lesson_id.toString() === lesson.id.toString());
             if (lessonSections.length > 0) {
               for (let j = 0; j < lessonSections.length; j++) {
+                const updateLessonSectionDto: Partial<UpdateLessonSectionDto> = {
+                  status: 'generating',
+                };
+                await this.lessonSectionsService.update(lessonSections[j].id, updateLessonSectionDto);
+
                 const sectionTitle = lessonSections[j].title;
 
                 const lessonSectionsInstructions = String.raw`
@@ -221,18 +234,18 @@ export class CourseGeneratorGateway {
                   const updatedContent = lessonSectionsOutput.content;
                   const updatedSummary = lessonSectionsOutput.summary;
 
-                  const updateLessonSectionDto: Partial<CreateLessonSectionDto> = {
+                  const updateLessonSectionDto: Partial<UpdateLessonSectionDto> = {
                     content: updatedContent,
                     summary: updatedSummary,
-                    status: 'completed',
+                    status: 'ready',
                   };
-
                   const updatedLessonSection = await this.lessonSectionsService.update(lessonSections[j].id, updateLessonSectionDto);
+
                   previousSummary = updatedLessonSection ? updatedLessonSection.summary : "";
                 }
 
                 const updateLessonDto: Partial<UpdateLessonDto> = {
-                  status: 'completed',
+                  status: 'ready',
                 };
                 await this.lessonsService.update(lesson.id, updateLessonDto);
 
@@ -248,6 +261,11 @@ export class CourseGeneratorGateway {
             }
           }
         }
+
+        const updateCourseDto: Partial<UpdateCourseDto> = {
+          status: 'ready',
+        };
+        await this.coursesService.update(createdCourse.id, updateCourseDto);
       }
 
       const progress: GenerateCourseProgress = {

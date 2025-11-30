@@ -32,7 +32,7 @@ export const LessonSectionsSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'generating', 'completed'],
+    enum: ['pending', 'generating', 'ready'],
     default: 'pending',
     required: true
   },
