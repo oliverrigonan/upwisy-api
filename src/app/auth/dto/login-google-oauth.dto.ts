@@ -1,4 +1,4 @@
 export class LoginGoogleOauthDto {
-    email: string;
-    providerId: string;
+  email: string;
+  providerId: string;
 }

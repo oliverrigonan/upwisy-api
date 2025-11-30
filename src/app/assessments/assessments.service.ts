@@ -19,7 +19,7 @@ export class AssessmentsService {
       user_id: createAssessmentDto.user_id,
       type: createAssessmentDto.type,
       course_id: createAssessmentDto.course_id,
-      course_lesson_id: createAssessmentDto.course_lesson_id,
+      lesson_id: createAssessmentDto.lesson_id,
       difficulty: createAssessmentDto.difficulty,
       total_items: createAssessmentDto.total_items,
       score: createAssessmentDto.score,

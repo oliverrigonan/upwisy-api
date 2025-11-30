@@ -1,9 +1,11 @@
 export class CreateCourseDto {
-    user_id: string;
-    date: string;
-    title: string;
-    details: string;
-    visibility: string;
-    owner_user_id: string;
-    status: string;
+  user_id: string;
+  title: string;
+  description: string;
+  thumbnail_url: string;
+  difficulty: string;
+  visibility: string;
+  status: string;
+  total_lessons: number;
+  total_sections: number;
 }

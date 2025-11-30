@@ -1,9 +1,9 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 export class OfferSDPDto {
-    @ApiProperty()
-    ephemeralKey: string;
+  @ApiProperty()
+  ephemeralKey: string;
 
-    @ApiProperty()
-    sdp: string;
+  @ApiProperty()
+  sdp: string;
 }

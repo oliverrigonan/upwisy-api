@@ -2,7 +2,7 @@ export class Assessment {
     user_id: string;
     type: string;
     course_id: string;
-    course_lesson_id: string;
+    lesson_id: string;
     difficulty: string;
     total_items: number;
     score: number;

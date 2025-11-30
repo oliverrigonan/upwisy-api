@@ -17,12 +17,14 @@ export class CoursesService {
   async create(createCourseDto: CreateCourseDto) {
     const newCourse: Course = {
       user_id: createCourseDto.user_id,
-      date: new Date(createCourseDto.date),
       title: createCourseDto.title,
-      details: createCourseDto.details,
+      description: createCourseDto.description,
+      thumbnail_url: createCourseDto.thumbnail_url,
+      difficulty: createCourseDto.difficulty,
       visibility: createCourseDto.visibility,
-      owner_user_id: createCourseDto.owner_user_id,
       status: createCourseDto.status,
+      total_lessons: createCourseDto.total_lessons,
+      total_sections: createCourseDto.total_sections,
       created_at: new Date(),
       updated_at: new Date(),
     };
@@ -47,11 +49,14 @@ export class CoursesService {
 
   update(id: string, updateCourseDto: UpdateCourseDto) {
     const updatedCourse: Partial<Course> = {
-      date: updateCourseDto.date ? new Date(updateCourseDto.date) : undefined,
       title: updateCourseDto.title,
-      details: updateCourseDto.details,
+      description: updateCourseDto.description,
+      thumbnail_url: updateCourseDto.thumbnail_url,
+      difficulty: updateCourseDto.difficulty,
       visibility: updateCourseDto.visibility,
       status: updateCourseDto.status,
+      total_lessons: updateCourseDto.total_lessons,
+      total_sections: updateCourseDto.total_sections,
       updated_at: new Date(),
     };
 

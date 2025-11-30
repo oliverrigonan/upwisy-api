@@ -33,13 +33,14 @@
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "mongoose": "^8.19.2",
-    "openai": "^6.7.0",
+    "openai": "^6.9.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

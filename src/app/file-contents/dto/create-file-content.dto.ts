@@ -1,4 +1,4 @@
 export class CreateFileContentDto {
-    file_id: string;
-    content: string;
+  file_id: string;
+  content: string;
 }
