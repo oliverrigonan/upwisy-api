@@ -7,7 +7,7 @@ export class User {
   is_disabled: boolean;
   photo_url: string;
   google_account_id: string;
-  session_id: string;
+  session_id: string | null;
   created_at: Date;
   updated_at: Date;
 }

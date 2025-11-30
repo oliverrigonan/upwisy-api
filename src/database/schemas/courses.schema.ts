@@ -32,8 +32,8 @@ export const CoursesSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'generating', 'ready', 'published', 'archived'],
-    default: 'draft',
+    enum: ['pending', 'generating', 'ready', 'published', 'archived'],
+    default: 'pending',
     required: true
   },
   total_lessons: {

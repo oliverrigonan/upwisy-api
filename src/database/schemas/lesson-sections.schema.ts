@@ -6,16 +6,24 @@ export const LessonSectionsSchema = new mongoose.Schema({
     ref: 'Lessons',
     required: true
   },
-  section_number: {
-    type: Number,
-    required: true
-  },
   title: {
     type: String,
     required: true
   },
+  topics: {
+    type: [String],
+    required: true
+  },
   content: {
     type: String,
+    required: true
+  },
+  summary: {
+    type: String,
+    required: true
+  },
+  section_number: {
+    type: Number,
     required: true
   },
   tokens_used: {

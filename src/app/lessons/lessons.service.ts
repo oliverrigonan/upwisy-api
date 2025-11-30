@@ -29,6 +29,21 @@ export class LessonsService {
     return await createdLesson.save();
   }
 
+  async createMany(createLessonDtos: CreateLessonDto[]) {
+    const newLessons: Lesson[] = createLessonDtos.map(createLessonDto => ({
+      course_id: createLessonDto.course_id,
+      title: createLessonDto.title,
+      description: createLessonDto.description,
+      lesson_number: createLessonDto.lesson_number,
+      status: createLessonDto.status,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }));
+
+    const createdLessons = await this.lessonsModel.insertMany(newLessons);
+    return createdLessons;
+  }
+
   async findAll() {
     return await this.lessonsModel.find().exec();
   }
@@ -44,13 +59,15 @@ export class LessonsService {
   }
 
   update(id: string, updateLessonDto: UpdateLessonDto) {
-    const updatedLesson: Partial<Lesson> = {
-      title: updateLessonDto.title,
-      description: updateLessonDto.description,
-      lesson_number: updateLessonDto.lesson_number,
-      status: updateLessonDto.status,
-      updated_at: new Date(),
-    };
+    const updatedLesson: Partial<Lesson> = {};
+
+    for (const key in updateLessonDto) {
+      if (updateLessonDto[key] !== undefined) {
+        updatedLesson[key] = updateLessonDto[key];
+      }
+    }
+
+    updatedLesson.updated_at = new Date();
 
     return this.lessonsModel.findByIdAndUpdate(id, updatedLesson, { new: true }).exec();
   }

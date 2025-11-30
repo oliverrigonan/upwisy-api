@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { UpwisyService } from './upwisy.service';
-import { UpwisyController } from './upwisy.controller';
+import { CourseGeneratorModule } from './course-generator/course-generator.module';
 
 @Module({
-  controllers: [UpwisyController],
-  providers: [UpwisyService],
+  imports: [
+    CourseGeneratorModule
+  ],
 })
-export class UpwisyModule {}
+export class UpwisyModule { }

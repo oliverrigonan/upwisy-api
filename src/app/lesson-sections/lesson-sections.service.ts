@@ -17,9 +17,11 @@ export class LessonSectionsService {
   async create(createLessonSectionDto: CreateLessonSectionDto) {
     const newLessonSection: LessonSection = {
       lesson_id: createLessonSectionDto.lesson_id,
-      section_number: createLessonSectionDto.section_number,
       title: createLessonSectionDto.title,
+      topics: createLessonSectionDto.topics,
       content: createLessonSectionDto.content,
+      summary: createLessonSectionDto.summary,
+      section_number: createLessonSectionDto.section_number,
       tokens_used: createLessonSectionDto.tokens_used,
       status: createLessonSectionDto.status,
       created_at: new Date(),
@@ -28,6 +30,24 @@ export class LessonSectionsService {
 
     const createdLessonSection = new this.lessonSectionsModel(newLessonSection);
     return await createdLessonSection.save();
+  }
+
+  async createMany(createLessonSectionDtos: CreateLessonSectionDto[]) {
+    const newLessonSections: LessonSection[] = createLessonSectionDtos.map(createLessonSectionDto => ({
+      lesson_id: createLessonSectionDto.lesson_id,
+      title: createLessonSectionDto.title,
+      topics: createLessonSectionDto.topics,
+      content: createLessonSectionDto.content,
+      summary: createLessonSectionDto.summary,
+      section_number: createLessonSectionDto.section_number,
+      tokens_used: createLessonSectionDto.tokens_used,
+      status: createLessonSectionDto.status,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }));
+
+    const createdLessonSections = await this.lessonSectionsModel.insertMany(newLessonSections);
+    return createdLessonSections;
   }
 
   async findAll() {
@@ -45,13 +65,15 @@ export class LessonSectionsService {
   }
 
   update(id: string, updateLessonSectionDto: UpdateLessonSectionDto) {
-    const updatedLessonSection: Partial<LessonSection> = {
-      title: updateLessonSectionDto.title,
-      content: updateLessonSectionDto.content,
-      tokens_used: updateLessonSectionDto.tokens_used,
-      status: updateLessonSectionDto.status,
-      updated_at: new Date(),
-    };
+    const updatedLessonSection: Partial<LessonSection> = {};
+
+    for (const key in updateLessonSectionDto) {
+      if (updateLessonSectionDto[key] !== undefined) {
+        updatedLessonSection[key] = updateLessonSectionDto[key];
+      }
+    }
+
+    updatedLessonSection.updated_at = new Date();
 
     return this.lessonSectionsModel.findByIdAndUpdate(id, updatedLessonSection, { new: true }).exec();
   }

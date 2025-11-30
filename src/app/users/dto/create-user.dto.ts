@@ -7,5 +7,5 @@ export class CreateUserDto {
   is_disabled: boolean;
   photo_url: string;
   google_account_id: string;
-  session_id: string;
+  session_id: string | null;
 }

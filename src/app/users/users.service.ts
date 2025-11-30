@@ -27,7 +27,7 @@ export class UsersService {
       is_disabled: false,
       photo_url: createUserDto.photo_url,
       google_account_id: createUserDto.google_account_id,
-      session_id: "",
+      session_id: null,
       created_at: new Date(),
       updated_at: new Date(),
     };
@@ -56,6 +56,12 @@ export class UsersService {
   async findOneByUsername(username: string) {
     return await this.usersModel.findOne({
       username: username
+    }).exec();
+  }
+
+  async findOneByEmail(email: string) {
+    return await this.usersModel.findOne({
+      email: email
     }).exec();
   }
 

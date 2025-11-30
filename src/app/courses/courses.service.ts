@@ -48,17 +48,15 @@ export class CoursesService {
   }
 
   update(id: string, updateCourseDto: UpdateCourseDto) {
-    const updatedCourse: Partial<Course> = {
-      title: updateCourseDto.title,
-      description: updateCourseDto.description,
-      thumbnail_url: updateCourseDto.thumbnail_url,
-      difficulty: updateCourseDto.difficulty,
-      visibility: updateCourseDto.visibility,
-      status: updateCourseDto.status,
-      total_lessons: updateCourseDto.total_lessons,
-      total_sections: updateCourseDto.total_sections,
-      updated_at: new Date(),
-    };
+    const updatedCourse: Partial<Course> = {};
+
+    for (const key in updateCourseDto) {
+      if (updateCourseDto[key] !== undefined) {
+        updatedCourse[key] = updateCourseDto[key];
+      }
+    }
+
+    updatedCourse.updated_at = new Date();
 
     return this.coursesModel.findByIdAndUpdate(id, updatedCourse, { new: true }).exec();
   }
