@@ -18,8 +18,9 @@ export class AssessmentsService {
     const newAssessment: Assessment = {
       user_id: createAssessmentDto.user_id,
       type: createAssessmentDto.type,
-      course_id: createAssessmentDto.course_id,
-      lesson_id: createAssessmentDto.lesson_id,
+      base_course_id: createAssessmentDto.base_course_id,
+      base_lesson_id: createAssessmentDto.base_lesson_id,
+      base_file_id: createAssessmentDto.base_file_id,
       difficulty: createAssessmentDto.difficulty,
       total_items: createAssessmentDto.total_items,
       score: createAssessmentDto.score,

@@ -8,18 +8,23 @@ export const AssessmentsSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['quiz', 'assignment', 'exam'],
+    enum: ['practice', 'quiz', 'assignment', 'exam'],
     required: true
   },
-  course_id: {
+  base_course_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Courses',
-    required: true
+    required: false
   },
-  lesson_id: {
+  base_lesson_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Lessons',
-    required: true
+    required: false
+  },
+  base_file_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Files',
+    required: false
   },
   difficulty: {
     type: String,

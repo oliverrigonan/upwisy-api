@@ -10,16 +10,23 @@ export const LessonSectionsSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  title: { type: String },
+  title: {
+    type: String,
+    required: true
+  },
   content: {
     type: String,
     required: true
   },
-  tokens_used: { type: Number },
+  tokens_used: {
+    type: Number,
+    required: false
+  },
   status: {
     type: String,
-    enum: ['pending', 'generating', 'complete'],
-    default: 'pending'
+    enum: ['pending', 'generating', 'completed'],
+    default: 'pending',
+    required: true
   },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },

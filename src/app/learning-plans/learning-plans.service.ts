@@ -17,7 +17,9 @@ export class LearningPlansService {
   async create(createLearningPlanDto: CreateLearningPlanDto) {
     const newLearningPlan: LearningPlan = {
       user_id: createLearningPlanDto.user_id,
-      course_id: createLearningPlanDto.course_id,
+      resource_course_id: createLearningPlanDto.resource_course_id,
+      resource_lesson_id: createLearningPlanDto.resource_lesson_id,
+      resource_assessment_id: createLearningPlanDto.resource_assessment_id,
       date: new Date(createLearningPlanDto.date),
       start_time: createLearningPlanDto.start_time,
       end_time: createLearningPlanDto.end_time,

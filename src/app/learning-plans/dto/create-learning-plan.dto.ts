@@ -1,6 +1,8 @@
 export class CreateLearningPlanDto {
   user_id: string;
-  course_id: string;
+  resource_course_id: string;
+  resource_lesson_id: string;
+  resource_assessment_id: string;
   date: string;
   start_time: string;
   end_time: string;

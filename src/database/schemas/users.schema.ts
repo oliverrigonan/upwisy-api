@@ -21,16 +21,23 @@ export const UsersSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['student', 'instructor', 'admin'],
-    default: 'student'
+    enum: ['user', 'student', 'instructor', 'admin'],
+    default: 'user',
+    required: true
   },
   is_disabled: {
     type: Boolean,
-    default: false
+    default: false,
+    required: false
   },
-  photo_url: { type: String },
+  photo_url: {
+    type: String,
+    required: false
+  },
   google_account_id: {
-    type: String, unique: true
+    type: String,
+    unique: true,
+    required: false
   },
   session_id: {
     type: mongoose.Schema.Types.ObjectId,

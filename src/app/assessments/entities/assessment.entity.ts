@@ -1,8 +1,9 @@
 export class Assessment {
     user_id: string;
     type: string;
-    course_id: string;
-    lesson_id: string;
+    base_course_id: string;
+    base_lesson_id: string;
+    base_file_id: string;
     difficulty: string;
     total_items: number;
     score: number;
