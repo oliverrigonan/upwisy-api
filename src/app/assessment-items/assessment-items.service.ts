@@ -31,6 +31,23 @@ export class AssessmentItemsService {
     return await createdAssessmentItem.save();
   }
 
+  async createMany(createAssessmentItemDtos: CreateAssessmentItemDto[]) {
+    const newAssessmentItems: AssessmentItem[] = createAssessmentItemDtos.map(createAssessmentItemDto => ({
+      assessment_id: createAssessmentItemDto.assessment_id,
+      type: createAssessmentItemDto.type,
+      question: createAssessmentItemDto.question,
+      options: createAssessmentItemDto.options,
+      correct_answer: createAssessmentItemDto.correct_answer,
+      user_answer: createAssessmentItemDto.user_answer,
+      percentage_correct: createAssessmentItemDto.percentage_correct,
+      is_correct: createAssessmentItemDto.is_correct,
+      answer_explanation: createAssessmentItemDto.answer_explanation,
+    }));
+
+    const createdAssessmentItems = await this.assessmentItemsModel.insertMany(newAssessmentItems);
+    return createdAssessmentItems;
+  }
+
   async findAll() {
     return await this.assessmentItemsModel.find().exec();
   }

@@ -37,6 +37,29 @@ export class AssessmentsService {
     return await createdAssessment.save();
   }
 
+  async createMany(createAssessmentDtos: CreateAssessmentDto[]) {
+    const newAssessments: Assessment[] = createAssessmentDtos.map(createAssessmentDto => ({
+      user_id: createAssessmentDto.user_id,
+      type: createAssessmentDto.type,
+      base_course_id: createAssessmentDto.base_course_id,
+      base_lesson_id: createAssessmentDto.base_lesson_id,
+      base_file_id: createAssessmentDto.base_file_id,
+      difficulty: createAssessmentDto.difficulty,
+      total_items: createAssessmentDto.total_items,
+      score: createAssessmentDto.score,
+      comments: createAssessmentDto.comments,
+      is_submitted: createAssessmentDto.is_submitted,
+      start_time: new Date(createAssessmentDto.start_time),
+      end_time: new Date(createAssessmentDto.end_time),
+      duration_seconds: createAssessmentDto.duration_seconds,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }));
+
+    const createdAssessments = await this.assessmentsModel.insertMany(newAssessments);
+    return createdAssessments;
+  }
+
   async findAll() {
     return await this.assessmentsModel.find().exec();
   }

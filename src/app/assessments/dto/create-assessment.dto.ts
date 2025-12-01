@@ -1,9 +1,9 @@
 export class CreateAssessmentDto {
   user_id: string;
   type: string;
-  base_course_id: string;
-  base_lesson_id: string;
-  base_file_id: string;
+  base_course_id: string | null;
+  base_lesson_id: string | null;
+  base_file_id: string | null;
   difficulty: string;
   total_items: number;
   score: number;

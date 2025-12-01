@@ -1,4 +1,4 @@
-export interface GenerateCourseProgress {
+export interface GenerationProgress {
   progressPercentage: number;
   message: string;
 }

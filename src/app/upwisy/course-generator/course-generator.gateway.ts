@@ -9,8 +9,8 @@ import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-import { GenerateCourseFromSubjectDto } from './dto/generate-course-from-subject.dto';
-import { GenerateCourseProgress } from './interfaces/generate-course-progress.interface';
+import { GenerateCourseFromSubjectDto } from './dto/generate-course.dto';
+import { GenerationProgress } from './../interfaces/generation-progress.interface';
 
 import { UsersService } from './../../users/users.service';
 import { CoursesService } from './../../courses/courses.service';
@@ -100,11 +100,11 @@ export class CourseGeneratorGateway {
 
       try {
         if (!this.matchesClassShape(data, GenerateCourseFromSubjectDto)) {
-          socket.emit('generate-course-error', 'Invalid GenerateCourseFromSubject structure');
+          socket.emit('error', 'Invalid GenerateCourseFromSubject structure');
           return;
         }
       } catch (validationError) {
-        socket.emit('generate-course-error', validationError.message);
+        socket.emit('error', validationError.message);
         return;
       }
 
@@ -112,7 +112,8 @@ export class CourseGeneratorGateway {
 
       const courseLessonsInstructions = String.raw`
         You are an expert course designer. Given the subject provided by the user, create a comprehensive course outline.
-        The course should include a title, description, and a list of lessons. Each lesson should have a number, title, description, and a list of sections. 
+        The course should include a title, description, and a list of lessons. 
+        Each lesson should have a number, title, description, and a list of sections. 
         Each section should include a number, title, and topics covered.
         Ensure the course is well-structured and covers all essential aspects of the subject.
         Provide the response in the specified structured format.
@@ -146,6 +147,10 @@ export class CourseGeneratorGateway {
           total_sections: totalSections,
         };
         const createdCourse = await this.coursesService.create(newCourse);
+        if (!createdCourse) {
+          socket.emit('error', 'Failed to create course record.');
+          return;
+        }
 
         const newLessons: CreateLessonDto[] = courseLessonsOutput.lessons.map(lesson => ({
           course_id: createdCourse.id,
@@ -155,6 +160,10 @@ export class CourseGeneratorGateway {
           status: 'pending',
         }));
         const createdLessons = await this.lessonsService.createMany(newLessons);
+        if (!createdLessons || createdLessons.length === 0) {
+          socket.emit('error', 'Failed to create lesson records.');
+          return;
+        }
 
         const newLessonSections: CreateLessonSectionDto[] = [];
         if (createdLessons.length > 0) {
@@ -183,6 +192,10 @@ export class CourseGeneratorGateway {
           }
         }
         const createdLessonSections = await this.lessonSectionsService.createMany(newLessonSections);
+        if (!createdLessonSections || createdLessonSections.length === 0) {
+          socket.emit('error', 'Failed to create lesson section records.');
+          return;
+        }
 
         if (createdLessons.length > 0) {
           let sectionsProcessed = 0;
@@ -252,9 +265,9 @@ export class CourseGeneratorGateway {
                 sectionsProcessed++;
 
                 progressPercentage = sectionsProcessed / totalSections * 100;
-                const progress: GenerateCourseProgress = {
+                const progress: GenerationProgress = {
                   progressPercentage: progressPercentage,
-                  message: 'Generated lesson section ' + sectionsProcessed + ' of ' + totalSections,
+                  message: 'Generated section ' + sectionsProcessed + ' of ' + totalSections,
                 };
                 socket.emit('generate-course-progress', progress);
               }
@@ -268,7 +281,7 @@ export class CourseGeneratorGateway {
         await this.coursesService.update(createdCourse.id, updateCourseDto);
       }
 
-      const progress: GenerateCourseProgress = {
+      const progress: GenerationProgress = {
         progressPercentage: progressPercentage,
         message: 'Course generation completed successfully.',
       };
