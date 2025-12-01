@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { Mongoose } from 'mongoose';
 
 import { FilesService } from './files.service';
 import { FilesController } from './files.controller';
 
 import { DatabaseModule } from './../../database/database.module';
-import { FilesSchema } from 'src/database/schemas/files.schema';
+import { FilesModelProvider } from './../../database/schemas/files.schema';
 
 @Module({
   controllers: [
@@ -13,11 +12,7 @@ import { FilesSchema } from 'src/database/schemas/files.schema';
   ],
   providers: [
     FilesService,
-    {
-      provide: 'FILES_MODEL',
-      useFactory: (mongoose: Mongoose) => mongoose.model('files', FilesSchema),
-      inject: ['DATABASE_CONNECTION'],
-    }
+    FilesModelProvider
   ],
   imports: [DatabaseModule],
 })

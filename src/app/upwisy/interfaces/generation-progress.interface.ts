@@ -1,4 +1,4 @@
 export interface GenerationProgress {
-  progressPercentage: number;
+  progress: number;
   message: string;
 }

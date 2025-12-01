@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { Mongoose } from 'mongoose';
 
 import { LessonsService } from './lessons.service';
 import { LessonsController } from './lessons.controller';
 
 import { DatabaseModule } from './../../database/database.module';
-import { LessonsSchema } from './../../database/schemas/lessons.schema';
+import { LessonsModelProvider } from './../../database/schemas/lessons.schema';
 
 @Module({
   controllers: [
@@ -13,11 +12,7 @@ import { LessonsSchema } from './../../database/schemas/lessons.schema';
   ],
   providers: [
     LessonsService,
-    {
-      provide: 'LESSONS_MODEL',
-      useFactory: (mongoose: Mongoose) => mongoose.model('lessons', LessonsSchema),
-      inject: ['DATABASE_CONNECTION'],
-    }
+    LessonsModelProvider
   ],
   imports: [DatabaseModule],
 })

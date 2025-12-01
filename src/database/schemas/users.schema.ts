@@ -1,6 +1,6 @@
 import * as mongoose from 'mongoose';
 
-export const UsersSchema = new mongoose.Schema({
+const UsersSchema = new mongoose.Schema({
   full_name: {
     type: String,
     required: true
@@ -46,4 +46,10 @@ export const UsersSchema = new mongoose.Schema({
   },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },
-})
+});
+
+export const UsersModelProvider = {
+  provide: 'USERS_MODEL',
+  useFactory: (mongoose: mongoose.Mongoose) => mongoose.model('users', UsersSchema),
+  inject: ['DATABASE_CONNECTION'],
+}

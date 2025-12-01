@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
+import { Model, HydratedDocument } from 'mongoose';
 
 import * as bcrypt from 'bcrypt';
 
@@ -8,12 +8,14 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
+export type UserDocument = HydratedDocument<User>;
+
 @Injectable()
 export class UsersService {
 
   constructor(
     @Inject('USERS_MODEL')
-    private usersModel: Model<User>,
+    private usersModel: Model<UserDocument>,
   ) { }
 
   async create(createUserDto: CreateUserDto) {

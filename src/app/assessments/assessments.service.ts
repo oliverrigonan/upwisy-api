@@ -1,17 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
+import { Model, HydratedDocument } from 'mongoose';
 
 import { Assessment } from './entities/assessment.entity';
 
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateAssessmentDto } from './dto/update-assessment.dto';
 
+export type AssessmentDocument = HydratedDocument<Assessment>;
+
 @Injectable()
 export class AssessmentsService {
 
   constructor(
     @Inject('ASSESSMENTS_MODEL')
-    private assessmentsModel: Model<Assessment>,
+    private assessmentsModel: Model<AssessmentDocument>,
   ) { }
 
   async create(createAssessmentDto: CreateAssessmentDto) {
@@ -27,7 +29,7 @@ export class AssessmentsService {
       comments: createAssessmentDto.comments,
       is_submitted: createAssessmentDto.is_submitted,
       start_time: new Date(createAssessmentDto.start_time),
-      end_time: new Date(createAssessmentDto.end_time),
+      end_time: createAssessmentDto.end_time ? new Date(createAssessmentDto.end_time) : null,
       duration_seconds: createAssessmentDto.duration_seconds,
       created_at: new Date(),
       updated_at: new Date(),
@@ -50,7 +52,7 @@ export class AssessmentsService {
       comments: createAssessmentDto.comments,
       is_submitted: createAssessmentDto.is_submitted,
       start_time: new Date(createAssessmentDto.start_time),
-      end_time: new Date(createAssessmentDto.end_time),
+      end_time: createAssessmentDto.end_time ? new Date(createAssessmentDto.end_time) : null,
       duration_seconds: createAssessmentDto.duration_seconds,
       created_at: new Date(),
       updated_at: new Date(),

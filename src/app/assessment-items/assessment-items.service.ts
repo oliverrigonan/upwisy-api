@@ -1,17 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
+import { Model, HydratedDocument } from 'mongoose';
 
 import { AssessmentItem } from './entities/assessment-item.entity';
 
 import { CreateAssessmentItemDto } from './dto/create-assessment-item.dto';
 import { UpdateAssessmentItemDto } from './dto/update-assessment-item.dto';
 
+export type AssessmentItemDocument = HydratedDocument<AssessmentItem>;
+
 @Injectable()
 export class AssessmentItemsService {
 
   constructor(
     @Inject('ASSESSMENT_ITEMS_MODEL')
-    private assessmentItemsModel: Model<AssessmentItem>,
+    private assessmentItemsModel: Model<AssessmentItemDocument>,
   ) { }
 
   async create(createAssessmentItemDto: CreateAssessmentItemDto) {

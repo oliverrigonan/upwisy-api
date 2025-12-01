@@ -3,9 +3,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import { Mongoose } from 'mongoose';
-
-import { UsersSchema } from './../../database/schemas/users.schema';
+import { UsersModelProvider } from './../../database/schemas/users.schema';
 import { DatabaseModule } from './../../database/database.module';
 
 import { AuthController } from './auth.controller';
@@ -22,11 +20,7 @@ import { UsersService } from '../users/users.service';
     AuthService,
     GoogleAuthStrategyService,
     UsersService,
-    {
-      provide: 'USERS_MODEL',
-      useFactory: (mongoose: Mongoose) => mongoose.model('users', UsersSchema),
-      inject: ['DATABASE_CONNECTION'],
-    },
+    UsersModelProvider
   ],
   imports: [
     ConfigModule,

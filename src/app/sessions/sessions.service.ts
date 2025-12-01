@@ -1,17 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
+import { Model, HydratedDocument } from 'mongoose';
 
 import { Session } from './entities/session.entity';
 
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 
+export type SessionDocument = HydratedDocument<Session>;
+
 @Injectable()
 export class SessionsService {
 
   constructor(
     @Inject('SESSIONS_MODEL')
-    private SessionsModel: Model<Session>,
+    private SessionsModel: Model<SessionDocument>,
   ) { }
 
   async create(createSessionDto: CreateSessionDto) {

@@ -1,6 +1,6 @@
 import * as mongoose from 'mongoose';
 
-export const AssessmentItemsSchema = new mongoose.Schema({
+const AssessmentItemsSchema = new mongoose.Schema({
   assessment_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Assessments',
@@ -40,3 +40,9 @@ export const AssessmentItemsSchema = new mongoose.Schema({
     required: false
   },
 });
+
+export const AssessmentItemsModelProvider = {
+  provide: 'ASSESSMENT_ITEMS_MODEL',
+  useFactory: (mongoose: mongoose.Mongoose) => mongoose.model('assessment_items', AssessmentItemsSchema),
+  inject: ['DATABASE_CONNECTION'],
+}

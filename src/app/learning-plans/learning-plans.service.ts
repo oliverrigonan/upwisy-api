@@ -1,17 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
+import { Model, HydratedDocument } from 'mongoose';
 
 import { LearningPlan } from './entities/learning-plan.entity';
 
 import { CreateLearningPlanDto } from './dto/create-learning-plan.dto';
 import { UpdateLearningPlanDto } from './dto/update-learning-plan.dto';
 
+export type LearningPlanDocument = HydratedDocument<LearningPlan>;
+
 @Injectable()
 export class LearningPlansService {
 
   constructor(
     @Inject('LEARNING_PLANS_MODEL')
-    private learningPlansModel: Model<LearningPlan>,
+    private learningPlansModel: Model<LearningPlanDocument>,
   ) { }
 
   async create(createLearningPlanDto: CreateLearningPlanDto) {

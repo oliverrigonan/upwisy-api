@@ -5,6 +5,7 @@ export class GenerateAssessmentForQuizDto {
 }
 
 export class GenerateAssessmentForExamDto {
+  type: string;
   course_id: string;
   difficulty: string;
 }

@@ -1,17 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
+import { Model, HydratedDocument } from 'mongoose';
 
 import { FileContent } from './entities/file-content.entity';
 
 import { CreateFileContentDto } from './dto/create-file-content.dto';
 import { UpdateFileContentDto } from './dto/update-file-content.dto';
 
+export type FileContentDocument = HydratedDocument<FileContent>;
+
 @Injectable()
 export class FileContentsService {
 
   constructor(
     @Inject('FILE_CONTENTS_MODEL')
-    private fileContentsModel: Model<FileContent>,
+    private fileContentsModel: Model<FileContentDocument>,
   ) { }
 
   async create(createFileContentDto: CreateFileContentDto) {

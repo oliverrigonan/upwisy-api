@@ -10,7 +10,7 @@ export class Assessment {
   comments: string;
   is_submitted: boolean;
   start_time: Date;
-  end_time: Date;
+  end_time: Date | null;
   duration_seconds: number;
   created_at: Date;
   updated_at: Date;

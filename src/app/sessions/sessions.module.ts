@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { Mongoose } from 'mongoose';
 
 import { SessionsService } from './sessions.service';
 import { SessionsController } from './sessions.controller';
 
 import { DatabaseModule } from './../../database/database.module';
-import { SessionsSchema } from 'src/database/schemas/sessions.schema';
+import { SessionsModelProvider } from './../../database/schemas/sessions.schema';
 
 @Module({
   controllers: [
@@ -13,11 +12,7 @@ import { SessionsSchema } from 'src/database/schemas/sessions.schema';
   ],
   providers: [
     SessionsService,
-    {
-      provide: 'SESSIONS_MODEL',
-      useFactory: (mongoose: Mongoose) => mongoose.model('sessions', SessionsSchema),
-      inject: ['DATABASE_CONNECTION'],
-    }
+    SessionsModelProvider
   ],
   imports: [DatabaseModule],
 })

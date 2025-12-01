@@ -1,6 +1,6 @@
 import * as mongoose from 'mongoose';
 
-export const AssessmentsSchema = new mongoose.Schema({
+const AssessmentsSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Users',
@@ -40,9 +40,23 @@ export const AssessmentsSchema = new mongoose.Schema({
   },
   comments: { type: String },
   is_submitted: { type: Boolean, default: false },
-  start_time: { type: Date, default: Date.now },
-  end_time: { type: Date, default: Date.now },
+  start_time: {
+    type: Date,
+    default: Date.now,
+    required: true
+  },
+  end_time: {
+    type: Date,
+    default: Date.now,
+    required: false
+  },
   duration_seconds: { type: Number },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },
-})
+});
+
+export const AssessmentsModelProvider = {
+  provide: 'ASSESSMENTS_MODEL',
+  useFactory: (mongoose: mongoose.Mongoose) => mongoose.model('assessments', AssessmentsSchema),
+  inject: ['DATABASE_CONNECTION'],
+}

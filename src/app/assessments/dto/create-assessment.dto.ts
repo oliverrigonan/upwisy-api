@@ -10,6 +10,6 @@ export class CreateAssessmentDto {
   comments: string;
   is_submitted: boolean;
   start_time: string;
-  end_time: string;
+  end_time: string | null;
   duration_seconds: number;
 }

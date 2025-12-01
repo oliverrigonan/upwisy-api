@@ -1,6 +1,6 @@
 import * as mongoose from 'mongoose';
 
-export const CoursesSchema = new mongoose.Schema({
+const CoursesSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Users',
@@ -47,3 +47,9 @@ export const CoursesSchema = new mongoose.Schema({
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },
 });
+
+export const CoursesModelProvider = {
+  provide: 'COURSES_MODEL',
+  useFactory: (mongoose: mongoose.Mongoose) => mongoose.model('courses', CoursesSchema),
+  inject: ['DATABASE_CONNECTION'],
+}

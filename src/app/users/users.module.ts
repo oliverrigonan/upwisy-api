@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { Mongoose } from 'mongoose';
 
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 
 import { DatabaseModule } from './../../database/database.module';
-import { UsersSchema } from './../../database/schemas/users.schema';
+import { UsersModelProvider } from './../../database/schemas/users.schema';
 
 @Module({
   controllers: [
@@ -13,11 +12,7 @@ import { UsersSchema } from './../../database/schemas/users.schema';
   ],
   providers: [
     UsersService,
-    {
-      provide: 'USERS_MODEL',
-      useFactory: (mongoose: Mongoose) => mongoose.model('users', UsersSchema),
-      inject: ['DATABASE_CONNECTION'],
-    }
+    UsersModelProvider
   ],
   imports: [DatabaseModule],
 })
