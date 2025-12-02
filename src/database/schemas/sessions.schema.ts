@@ -6,26 +6,17 @@ export const SessionsSchema = new mongoose.Schema({
     ref: 'Users',
     required: true
   },
-  course_id: {
+  enrollment_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Courses',
-    required: true
-  },
-  lesson_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Lessons',
+    ref: 'Enrollments',
     required: true
   },
   start_time: {
-    type: String,
+    type: Date,
     required: true
   },
   end_time: {
-    type: String,
-    required: true
-  },
-  duration_seconds: {
-    type: Number,
+    type: Date,
     required: true
   },
   created_at: { type: Date, default: Date.now },

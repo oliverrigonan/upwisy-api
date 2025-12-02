@@ -1,26 +1,22 @@
 import * as mongoose from 'mongoose';
 
-const LessonsSchema = new mongoose.Schema({
+const QuizzesSchema = new mongoose.Schema({
   course_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Courses',
-    required: true
+    required: false
   },
-  title: {
+  instructions: {
     type: String,
-    required: true
+    required: false
   },
-  description: {
+  difficulty: {
     type: String,
-    required: true,
+    enum: ['easy', 'medium', 'hard']
   },
-  lesson_number: {
+  total_items: {
     type: Number,
     required: true
-  },
-  total_lesson_sections: {
-    type: Number,
-    default: 0
   },
   status: {
     type: String,
@@ -32,8 +28,8 @@ const LessonsSchema = new mongoose.Schema({
   updated_at: { type: Date, default: Date.now },
 });
 
-export const LessonsModelProvider = {
-  provide: 'LESSONS_MODEL',
-  useFactory: (mongoose: mongoose.Mongoose) => mongoose.model('lessons', LessonsSchema),
+export const QuizzesModelProvider = {
+  provide: 'QUIZZES_MODEL',
+  useFactory: (mongoose: mongoose.Mongoose) => mongoose.model('quizzes', QuizzesSchema),
   inject: ['DATABASE_CONNECTION'],
 }

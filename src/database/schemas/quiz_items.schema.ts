@@ -1,9 +1,9 @@
 import * as mongoose from 'mongoose';
 
-const AssessmentItemsSchema = new mongoose.Schema({
-  assessment_id: {
+const QuizItemsSchema = new mongoose.Schema({
+  quiz_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Assessments',
+    ref: 'Quizzes',
     required: true
   },
   type: {
@@ -23,26 +23,14 @@ const AssessmentItemsSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  user_answer: {
-    type: String,
-    required: false
-  },
-  percentage_correct: {
-    type: Number,
-    required: true
-  },
-  is_correct: {
-    type: Boolean,
-    required: true
-  },
   answer_explanation: {
     type: String,
     required: false
   },
 });
 
-export const AssessmentItemsModelProvider = {
-  provide: 'ASSESSMENT_ITEMS_MODEL',
-  useFactory: (mongoose: mongoose.Mongoose) => mongoose.model('assessment_items', AssessmentItemsSchema),
+export const QuizItemsModelProvider = {
+  provide: 'QUIZ_ITEMS_MODEL',
+  useFactory: (mongoose: mongoose.Mongoose) => mongoose.model('quiz_items', QuizItemsSchema),
   inject: ['DATABASE_CONNECTION'],
 }

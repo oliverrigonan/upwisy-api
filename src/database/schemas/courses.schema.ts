@@ -14,15 +14,27 @@ const CoursesSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  thumbnail_url: {
-    type: String,
-    required: false
-  },
   difficulty: {
     type: String,
     enum: ['beginner', 'intermediate', 'advanced'],
     default: 'beginner',
     required: true
+  },
+  type: {
+    type: String,
+    enum: ['training_lessons', 'quiz_only', 'full_course'],
+    default: 'training_lessons',
+    required: true
+  },
+  is_training_required: {
+    type: Boolean,
+    default: false,
+    required: true
+  },
+  material_file_id: {
+    type: String,
+    default: null,
+    required: false
   },
   visibility: {
     type: String,
@@ -30,19 +42,19 @@ const CoursesSchema = new mongoose.Schema({
     default: 'private',
     required: true
   },
+  total_lessons: {
+    type: Number,
+    default: 0,
+  },
+  total_quizzes: {
+    type: Number,
+    default: 0,
+  },
   status: {
     type: String,
     enum: ['pending', 'generating', 'ready', 'published', 'archived'],
     default: 'pending',
     required: true
-  },
-  total_lessons: {
-    type: Number,
-    default: 0,
-  },
-  total_sections: {
-    type: Number,
-    default: 0
   },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },

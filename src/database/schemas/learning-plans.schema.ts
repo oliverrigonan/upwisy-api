@@ -6,20 +6,10 @@ const LearningPlansSchema = new mongoose.Schema({
     ref: 'Users',
     required: true
   },
-  resource_course_id: {
+  enrollment_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Courses',
-    required: false
-  },
-  resource_lesson_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Lessons',
-    required: false
-  },
-  resource_assessment_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Assessments',
-    required: false
+    ref: 'Enrollments',
+    required: true
   },
   date: {
     type: Date,

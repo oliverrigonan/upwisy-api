@@ -22,10 +22,6 @@ const LessonSectionsSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  section_number: {
-    type: Number,
-    required: true
-  },
   tokens_used: {
     type: Number,
     required: false
@@ -36,8 +32,6 @@ const LessonSectionsSchema = new mongoose.Schema({
     default: 'pending',
     required: true
   },
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now },
 });
 
 export const LessonSectionsModelProvider = {

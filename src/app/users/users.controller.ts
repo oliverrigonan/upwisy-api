@@ -38,4 +38,23 @@ export class UsersController {
 
     return user;
   }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Get('by-email/:email')
+  async findOneByEmail(@Param('email') email: string) {
+    const user = await this.usersService.findOneByEmail(email);
+    if (!user) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'User not found',
+          error: `The user with email ${email} does not exist.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return user;
+  }
 }

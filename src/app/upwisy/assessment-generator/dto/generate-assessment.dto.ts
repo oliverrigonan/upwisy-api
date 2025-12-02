@@ -9,8 +9,3 @@ export class GenerateAssessmentForExamDto {
   course_id: string;
   difficulty: string;
 }
-
-export class GenerateAssessmentForPracticeDto {
-  file_id: string;
-  difficulty: string;
-}

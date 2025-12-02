@@ -10,7 +10,6 @@ import { CoursesModule } from './app/courses/courses.module';
 import { LessonsModule } from './app/lessons/lessons.module';
 import { LessonSectionsModule } from './app/lesson-sections/lesson-sections.module';
 import { SessionsModule } from './app/sessions/sessions.module';
-import { CourseUsersModule } from './app/course-users/course-users.module';
 import { AssessmentsModule } from './app/assessments/assessments.module';
 import { AssessmentItemsModule } from './app/assessment-items/assessment-items.module';
 import { FilesModule } from './app/files/files.module';
@@ -31,7 +30,6 @@ import { UpwisyModule } from './app/upwisy/upwisy.module';
     LessonsModule,
     LessonSectionsModule,
     SessionsModule,
-    CourseUsersModule,
     AssessmentsModule,
     AssessmentItemsModule,
     FilesModule,
