@@ -22,11 +22,11 @@ const CoursesSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['training_lessons', 'quiz_only', 'full_course'],
-    default: 'training_lessons',
+    enum: ['full_course', 'quiz_only'],
+    default: 'full_course',
     required: true
   },
-  is_training_required: {
+  is_mandatory: {
     type: Boolean,
     default: false,
     required: true

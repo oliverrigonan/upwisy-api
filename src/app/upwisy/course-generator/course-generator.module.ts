@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 
 import { CourseGeneratorGateway } from './course-generator.gateway';
-import { CourseGeneratorService } from './course-generator.service';
 
 import { UsersService } from './../../users/users.service';
 import { CoursesService } from './../../courses/courses.service';
@@ -17,7 +16,6 @@ import { LessonSectionsModelProvider } from './../../..//database/schemas/lesson
 @Module({
   providers: [
     CourseGeneratorGateway,
-    CourseGeneratorService,
 
     UsersService,
     CoursesService,
