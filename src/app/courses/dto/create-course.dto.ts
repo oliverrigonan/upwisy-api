@@ -2,10 +2,12 @@ export class CreateCourseDto {
   user_id: string;
   title: string;
   description: string;
-  thumbnail_url: string;
   difficulty: string;
+  type: string;
+  is_mandatory: boolean;
+  material_file_id: string | null;
   visibility: string;
-  status: string;
   total_lessons: number;
-  total_sections: number;
+  total_quizzes: number;
+  status: string;
 }

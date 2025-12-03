@@ -19,16 +19,14 @@ export class LearningPlansService {
   async create(createLearningPlanDto: CreateLearningPlanDto) {
     const newLearningPlan: LearningPlan = {
       user_id: createLearningPlanDto.user_id,
-      resource_course_id: createLearningPlanDto.resource_course_id,
-      resource_lesson_id: createLearningPlanDto.resource_lesson_id,
-      resource_assessment_id: createLearningPlanDto.resource_assessment_id,
+      enrollment_id: createLearningPlanDto.enrollment_id,
       date: new Date(createLearningPlanDto.date),
       start_time: createLearningPlanDto.start_time,
       end_time: createLearningPlanDto.end_time,
       repetition: createLearningPlanDto.repetition,
       days_of_week: createLearningPlanDto.days_of_week,
       ends: createLearningPlanDto.ends,
-      ends_on_date: new Date(createLearningPlanDto.ends_on_date),
+      ends_on_date: createLearningPlanDto.ends_on_date ? new Date(createLearningPlanDto.ends_on_date) : null,
       notes: createLearningPlanDto.notes,
       created_at: new Date(),
       updated_at: new Date(),
@@ -64,17 +62,15 @@ export class LearningPlansService {
   }
 
   update(id: string, updateLearningPlanDto: UpdateLearningPlanDto) {
-    const updatedLearningPlan: Partial<LearningPlan> = {
-      date: updateLearningPlanDto.date ? new Date(updateLearningPlanDto.date) : undefined,
-      start_time: updateLearningPlanDto.start_time,
-      end_time: updateLearningPlanDto.end_time,
-      repetition: updateLearningPlanDto.repetition,
-      days_of_week: updateLearningPlanDto.days_of_week,
-      ends: updateLearningPlanDto.ends,
-      ends_on_date: updateLearningPlanDto.ends_on_date ? new Date(updateLearningPlanDto.ends_on_date) : undefined,
-      notes: updateLearningPlanDto.notes,
-      updated_at: new Date(),
-    };
+    const updatedLearningPlan: Partial<LearningPlan> = {};
+
+    for (const key in updateLearningPlanDto) {
+      if (updateLearningPlanDto[key] !== undefined) {
+        updatedLearningPlan[key] = updateLearningPlanDto[key];
+      }
+    }
+
+    updatedLearningPlan.updated_at = new Date();
 
     return this.learningPlansModel.findByIdAndUpdate(id, updatedLearningPlan, { new: true }).exec();
   }

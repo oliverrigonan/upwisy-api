@@ -19,8 +19,8 @@ export class SessionsService {
   async create(createSessionDto: CreateSessionDto) {
     const newSession: Session = {
       user_id: createSessionDto.user_id,
-      course_id: createSessionDto.course_id,
-      lesson_id: createSessionDto.lesson_id,
+      enrollment_id: createSessionDto.enrollment_id,
+      type: createSessionDto.type,
       start_time: createSessionDto.start_time,
       end_time: createSessionDto.end_time,
       duration_seconds: createSessionDto.duration_seconds,
@@ -47,12 +47,15 @@ export class SessionsService {
   }
 
   update(id: string, updateSessionDto: UpdateSessionDto) {
-    const updatedSession: Partial<Session> = {
-      start_time: updateSessionDto.start_time,
-      end_time: updateSessionDto.end_time,
-      duration_seconds: updateSessionDto.duration_seconds,
-      updated_at: new Date(),
-    };
+    const updatedSession: Partial<Session> = {};
+
+    for (const key in updateSessionDto) {
+      if (updateSessionDto[key] !== undefined) {
+        updatedSession[key] = updateSessionDto[key];
+      }
+    }
+
+    updatedSession.updated_at = new Date();
 
     return this.SessionsModel.findByIdAndUpdate(id, updatedSession, { new: true }).exec();
   }

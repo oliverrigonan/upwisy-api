@@ -44,7 +44,7 @@ const LearningPlansSchema = new mongoose.Schema({
   },
   ends_on_date: {
     type: Date,
-    default: Date.now,
+    default: null,
     required: false
   },
   notes: {

@@ -1,6 +1,5 @@
 export class LessonSection {
   lesson_id: string;
-  section_number: number;
   title: string;
   topics: string[];
   content: string;

@@ -17,6 +17,13 @@ import { FileContentsModule } from './app/file-contents/file-contents.module';
 import { LearningPlansModule } from './app/learning-plans/learning-plans.module';
 import { OpenaiModule } from './app/openai/openai.module';
 import { UpwisyModule } from './app/upwisy/upwisy.module';
+import { QuizzesModule } from './app/quizzes/quizzes.module';
+import { QuizItemsModule } from './app/quiz-items/quiz-items.module';
+import { EnrollmentsModule } from './app/enrollments/enrollments.module';
+import { EnrollmentQuizzesModule } from './app/enrollment-quizzes/enrollment-quizzes.module';
+import { EnrollmentQuizItemsModule } from './app/enrollment-quiz-items/enrollment-quiz-items.module';
+import { EnrollmentLessonsModule } from './app/enrollment-lessons/enrollment-lessons.module';
+import { EnrollmentLessonSectionsModule } from './app/enrollment-lesson-sections/enrollment-lesson-sections.module';
 
 @Module({
   imports: [
@@ -37,6 +44,13 @@ import { UpwisyModule } from './app/upwisy/upwisy.module';
     LearningPlansModule,
     OpenaiModule,
     UpwisyModule,
+    QuizzesModule,
+    QuizItemsModule,
+    EnrollmentsModule,
+    EnrollmentQuizzesModule,
+    EnrollmentQuizItemsModule,
+    EnrollmentLessonsModule,
+    EnrollmentLessonSectionsModule,
   ],
   controllers: [
     AppController,

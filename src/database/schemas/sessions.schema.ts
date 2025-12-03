@@ -11,6 +11,11 @@ export const SessionsSchema = new mongoose.Schema({
     ref: 'Enrollments',
     required: true
   },
+  type: {
+    type: String,
+    enum: ['full_course_session', 'quiz_session'],
+    required: true
+  },
   start_time: {
     type: Date,
     required: true
