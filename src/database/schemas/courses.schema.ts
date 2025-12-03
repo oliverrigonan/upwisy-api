@@ -22,7 +22,7 @@ const CoursesSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['full_course', 'quiz_only'],
+    enum: ['full_course', 'quiz_only_course'],
     default: 'full_course',
     required: true
   },

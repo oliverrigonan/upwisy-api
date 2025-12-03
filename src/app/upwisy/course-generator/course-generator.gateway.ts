@@ -9,14 +9,13 @@ import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-import { GenerateCourseDto, GenerationCourseDifficulty, GenerationSource } from './dto/generate-course.dto';
+import { GenerateCourseDto, GenerationSource, GenerationCourseDifficulty } from './dto/generate-course.dto';
 import { GenerationProgress } from './../interfaces/generation-progress.interface';
 
 import { UsersService, UserDocument } from './../../users/users.service';
 import { CoursesService } from './../../courses/courses.service';
 import { LessonsService } from './../../lessons/lessons.service';
 import { LessonSectionsService } from './../../lesson-sections/lesson-sections.service';
-import { FilesService } from './../../files/files.service';
 import { FileContentsService } from './../../file-contents/file-contents.service';
 
 import { CreateLessonSectionDto } from './../../lesson-sections/dto/create-lesson-section.dto';
@@ -37,7 +36,6 @@ export class CourseGeneratorGateway {
     private readonly coursesService: CoursesService,
     private readonly lessonsService: LessonsService,
     private readonly lessonSectionsService: LessonSectionsService,
-    private readonly fileService: FilesService,
     private readonly fileContentsService: FileContentsService,
   ) { }
 
@@ -64,6 +62,18 @@ export class CourseGeneratorGateway {
     title: z.string(),
     content: z.string(),
     summary: z.string(),
+  });
+  quizItemStructure = z.object({
+    number: z.string(),
+    question: z.string(),
+    options: z.array(z.object({
+      option: z.string(),
+      content: z.string(),
+    })),
+    correct_answer: z.string(),
+  });
+  quizItemsStructure = z.object({
+    assessmentItems: z.array(this.quizItemStructure)
   });
 
   async getCurrentUser(socket: Socket): Promise<UserDocument | null> {
@@ -141,8 +151,12 @@ export class CourseGeneratorGateway {
         );
       }
 
-      if (data.type.value === "quiz_only") {
-        /// TODO: Implement generateCourseWithQuizzesFromSubject
+      if (data.type.value === "quiz_only_course") {
+        await this.generateQuizOnlyCourse(
+          socket,
+          data.source,
+          data.course_difficulty
+        );
       }
     } catch (error) {
       socket.emit('error', 'An Error Occurred: ' + error.message);
@@ -164,12 +178,10 @@ export class CourseGeneratorGateway {
       switch (source.value) {
         case "subject": {
           const courseInstructions = String.raw`
-            You are an expert course designer. Given the subject provided by the user, create a comprehensive course outline.
-            The course should include a title, description, and a list of lessons. 
-            Each lesson should have a number, title, description, and a list of sections. 
-            Each section should include a number, title, and topics covered.
+            You are an expert course designer. Given the subject provided by the user, create a comprehensive course.
+            The course should include a detailed title and an in-depth description that covers the scope, objectives, and key learning outcomes.
             The course should be tailored for a ${course_difficulty} difficulty level.
-            Ensure the course is well-structured and covers all essential aspects of the subject.
+            Ensure the description is informative and gives a clear overview of what the course will cover.
             Provide the response in the specified structured format.
           `;
           const courseContent = `Subject: ${source.subject}`;
@@ -397,6 +409,8 @@ export class CourseGeneratorGateway {
             return;
           }
 
+          let totalItemsProcessed = 0;
+
           for (let i = 0; i < fileContents.length; i++) {
             const fileContent = fileContents[i];
 
@@ -459,8 +473,6 @@ export class CourseGeneratorGateway {
               socket.emit('error', 'Failed to create lesson section records.');
               return;
             }
-
-            let totalItemsProcessed = 0;
 
             const lesson = createdLesson;
             await this.lessonsService.update(lesson.id, {
@@ -538,186 +550,147 @@ export class CourseGeneratorGateway {
     }
   }
 
-  private async generateQuizOnly(
+  private async generateQuizOnlyCourse(
     socket: Socket,
-    subject: string,
-    difficulty: GenerationCourseDifficulty
+    source: GenerationSource,
+    course_difficulty: GenerationCourseDifficulty,
   ) {
+
     try {
       const currentUser = await this.getCurrentUser(socket);
       if (!currentUser) return;
 
-      const courseWithLessonsInstructions = String.raw`
-        You are an expert course designer. Given the subject provided by the user, create a comprehensive course outline.
-        The course should include a title, description, and a list of lessons. 
-        Each lesson should have a number, title, description, and a list of sections. 
-        Each section should include a number, title, and topics covered.
-        The course should be tailored for a ${difficulty} difficulty level.
-        Ensure the course is well-structured and covers all essential aspects of the subject.
-        Provide the response in the specified structured format.
-      `;
-      const courseWithLessonsContent = `Subject: ${subject}`;
-      const courseWithLessonsSchema = z.object({
-        title: z.string(),
-        description: z.string(),
-        lessons: z.array(z.object({
-          number: z.number(),
-          title: z.string(),
-          description: z.string(),
-          sections: z.array(z.object({
-            number: z.number(),
-            title: z.string(),
-            topics: z.array(z.string()),
-          })),
-        })),
-      });
-
-      const courseWithLessonsResponse = await this.generateWithStructure(
-        courseWithLessonsInstructions,
-        courseWithLessonsContent,
-        courseWithLessonsSchema,
-        "course_with_lessons"
-      );
-
-      const courseWithLessonsOutput = courseWithLessonsResponse.output_parsed;
-      if (!courseWithLessonsOutput) {
-        socket.emit('error', 'Failed to parse course lessons output.');
-        return;
-      }
-
-      const createdCourse = await this.coursesService.create({
-        user_id: currentUser.id,
-        title: courseWithLessonsOutput.title,
-        description: courseWithLessonsOutput.description,
-        thumbnail_url: '',
-        difficulty: difficulty,
-        visibility: 'private',
-        status: 'pending',
-        total_lessons: courseWithLessonsOutput.lessons.length,
-        total_sections: courseWithLessonsOutput.lessons.reduce((sum, lesson) => sum + lesson.sections.length, 0),
-      });
-
-      if (!createdCourse) {
-        socket.emit('error', 'Failed to create course record.');
-        return;
-      }
-
-      const createdLessons = await this.lessonsService.createMany(
-        courseWithLessonsOutput.lessons.map(lesson => ({
-          course_id: createdCourse.id,
-          title: lesson.title,
-          description: lesson.description,
-          lesson_number: lesson.number,
-          status: 'pending',
-        }))
-      );
-
-      if (!createdLessons || createdLessons.length === 0) {
-        socket.emit('error', 'Failed to create lesson records.');
-        return;
-      }
-
-      const newLessonSections: CreateLessonSectionDto[] = [];
-      for (let i = 0; i < createdLessons.length; i++) {
-        const lesson = courseWithLessonsOutput.lessons.find(l =>
-          l.number === createdLessons[i].lesson_number &&
-          l.title === createdLessons[i].title &&
-          l.description === createdLessons[i].description
-        );
-
-        const lessonSections = lesson?.sections || [];
-        if (lessonSections.length > 0) {
-          for (let j = 0; j < lessonSections.length; j++) {
-            const section = lessonSections[j];
-            newLessonSections.push({
-              lesson_id: createdLessons[i].id,
-              title: section.title,
-              topics: section.topics,
-              content: 'generating...',
-              summary: 'generating...',
-              section_number: section.number,
-              tokens_used: 0,
-              status: 'pending',
-            });
-          }
-        }
-      }
-
-      const createdLessonSections = await this.lessonSectionsService.createMany(newLessonSections);
-      if (!createdLessonSections || createdLessonSections.length === 0) {
-        socket.emit('error', 'Failed to create lesson section records.');
-        return;
-      }
-
       let currentProgress = 0;
-      let totalItemsProcessed = 0;
 
-      for (let i = 0; i < createdLessons.length; i++) {
-        const lesson = createdLessons[i];
+      switch (source.value) {
+        case "subject": {
+          const courseInstructions = String.raw`
+            You are an expert course designer. Given the subject provided by the user, create a quiz-only course.
+            The course should include a title and a detailed description that covers the scope and objectives of the quiz.
+            The course should be tailored for a ${course_difficulty} difficulty level.
+            This course is intended for assessment purposes only and will not include lessons or sections.
+            Ensure the description is informative and gives a clear overview of what will be assessed.
+            Provide the response in the specified structured format.
+          `;
+          const courseContent = `Subject: ${source.subject}`;
 
-        await this.lessonsService.update(lesson.id, {
-          status: 'generating',
-        });
+          const courseResponse = await this.generateWithStructure(
+            courseInstructions,
+            courseContent,
+            this.courseSchema,
+            "course"
+          );
 
-        let previousSummary = "";
+          const courseOutput = courseResponse.output_parsed;
+          if (!courseOutput) {
+            socket.emit('error', 'Failed to parse course output.');
+            return;
+          }
 
-        const lessonSectionsPerLesson = createdLessonSections.filter(section => section.lesson_id.toString() === lesson.id.toString());
-        if (lessonSectionsPerLesson.length > 0) {
-          for (let j = 0; j < lessonSectionsPerLesson.length; j++) {
-            await this.lessonSectionsService.update(lessonSectionsPerLesson[j].id, {
-              status: 'generating',
-            });
+          const createdCourse = await this.coursesService.create({
+            user_id: currentUser.id,
+            title: courseOutput.title,
+            description: courseOutput.description,
+            thumbnail_url: '',
+            difficulty: course_difficulty,
+            visibility: 'private',
+            status: 'pending',
+            total_lessons: 0,
+            total_sections: 0,
+          });
 
-            const lessonSectionsInstructions = String.raw`
-              You are an expert content creator. Given the lesson title, previous section summary, section title, and topics, create detailed content for the lesson section.
-              Ensure the content is informative, engaging, and covers all topics provided.
-              Additionally, provide a concise summary of the section content for future reference.
-              Provide the response in the specified structured format.
-            `;
-            const lessonSectionsContent = `Lesson Title: ${lesson.title}\nPrevious Summary: ${previousSummary}\nSection Title: ${lessonSectionsPerLesson[j].title}\nTopics: ${lessonSectionsPerLesson[j].topics.join(", ")}`;
-            const lessonSectionsSchema = z.object({
-              title: z.string(),
-              content: z.string(),
-              summary: z.string(),
-            });
+          if (!createdCourse) {
+            socket.emit('error', 'Failed to create course record.');
+            return;
+          }
 
-            const lessonSectionsResponse = await this.generateWithStructure(
-              lessonSectionsInstructions,
-              lessonSectionsContent,
-              lessonSectionsSchema,
-              "lesson_sections_content"
-            );
 
-            const lessonSectionsOutput = lessonSectionsResponse.output_parsed;
-            if (lessonSectionsOutput) {
-              const updatedLessonSection = await this.lessonSectionsService.update(lessonSectionsPerLesson[j].id, {
-                content: lessonSectionsOutput.content,
-                summary: lessonSectionsOutput.summary,
-                status: 'ready',
-              });
 
-              previousSummary = updatedLessonSection ? updatedLessonSection.summary : "";
-            }
+          await this.coursesService.update(createdCourse.id, {
+            status: 'ready',
+          });
 
-            await this.lessonsService.update(lesson.id, {
-              status: 'ready',
-            });
+          const generationProgress: GenerationProgress = {
+            progress: currentProgress,
+            message: 'Generation completed successfully.',
+          };
+          socket.emit('generation-progress', generationProgress);
+
+          break;
+        }
+
+        case "file": {
+          const fileContents = await this.fileContentsService.findByFileId(source.file_id);
+          if (!fileContents || fileContents.length === 0) {
+            socket.emit('error', 'No content found for the provided file.');
+            return;
+          }
+
+          const firstFileContent = fileContents[0]?.content || "";
+
+          const courseInstructions = String.raw`
+            You are an expert course designer. Given the content of the file provided by the user, create a quiz-only course.
+            The course should include a title and a detailed description that covers the scope and objectives of the quiz.
+            The course should be tailored for a ${course_difficulty} difficulty level.
+            This course is intended for assessment purposes only and will not include lessons or sections.
+            Ensure the description is informative and gives a clear overview of what will be assessed.
+            Provide the response in the specified structured format.
+          `;
+          const courseContent = `File Content: ${firstFileContent}`;
+
+          const courseResponse = await this.generateWithStructure(
+            courseInstructions,
+            courseContent,
+            this.courseSchema,
+            "course"
+          );
+
+          const courseOutput = courseResponse.output_parsed;
+          if (!courseOutput) {
+            socket.emit('error', 'Failed to parse course output.');
+            return;
+          }
+
+          const createdCourse = await this.coursesService.create({
+            user_id: currentUser.id,
+            title: courseOutput.title,
+            description: courseOutput.description,
+            thumbnail_url: '',
+            difficulty: course_difficulty,
+            visibility: 'private',
+            status: 'pending',
+            total_lessons: 0,
+            total_sections: 0,
+          });
+
+          if (!createdCourse) {
+            socket.emit('error', 'Failed to create course record.');
+            return;
+          }
+
+          let totalItemsProcessed = 0;
+
+          for (let i = 0; i < fileContents.length; i++) {
+            // const fileContent = fileContents[i];
 
             totalItemsProcessed++;
 
-            currentProgress = (totalItemsProcessed / createdLessonSections.length) * 100;
+            currentProgress = (totalItemsProcessed / fileContents.length) * 100;
             const generationProgress: GenerationProgress = {
               progress: currentProgress,
-              message: 'Generated ' + totalItemsProcessed + ' of ' + createdLessonSections.length,
+              message: 'Generated ' + totalItemsProcessed + ' of ' + fileContents.length,
             };
             socket.emit('generation-progress', generationProgress);
           }
+
+          break;
+        }
+
+        default: {
+          socket.emit('error', 'Invalid generation source type.');
+          break;
         }
       }
-
-      await this.coursesService.update(createdCourse.id, {
-        status: 'ready',
-      });
 
       const generationProgress: GenerationProgress = {
         progress: currentProgress,
@@ -729,16 +702,4 @@ export class CourseGeneratorGateway {
       return;
     }
   }
-
-  // private async generateCourseFromFile(socket: Socket, file_id: string, difficulty_level: GenerationDifficultyLevel) {
-
-  // }
-
-  // private async generateCourseFromUrl(socket: Socket, url: string, difficulty_level: GenerationDifficultyLevel) {
-
-  // }
-
-  // private async generateCourseFromYoutubeUrl(socket: Socket, youtube_url: string, difficulty_level: GenerationDifficultyLevel) {
-
-  // }
 }

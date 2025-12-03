@@ -13,7 +13,7 @@ export type GenerationCourseDifficulty = typeof COURSE_DIFFICULTY_LEVELS[number]
 
 export type GenerationType =
   | { value: 'full_course'; is_mandatory: boolean; }
-  | { value: 'quiz_only'; quiz_difficulty: GenerationQuizDifficulty; };
+  | { value: 'quiz_only_course'; quiz_difficulty: GenerationQuizDifficulty; };
 
 export class GenerateCourseDto {
   source!: GenerationSource;
