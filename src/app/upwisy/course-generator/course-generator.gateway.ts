@@ -203,12 +203,14 @@ export class CourseGeneratorGateway {
             user_id: currentUser.id,
             title: courseOutput.title,
             description: courseOutput.description,
-            thumbnail_url: '',
             difficulty: course_difficulty,
+            type: 'full_course',
+            is_mandatory: false,
+            material_file_id: null,
             visibility: 'private',
             status: 'pending',
             total_lessons: 0,
-            total_sections: 0,
+            total_quizzes: 0,
           });
 
           if (!createdCourse) {
@@ -245,6 +247,7 @@ export class CourseGeneratorGateway {
               title: lesson.title,
               description: lesson.description,
               lesson_number: lesson.number,
+              total_lesson_sections: lesson.sections.length,
               status: 'pending',
             }))
           );
@@ -272,7 +275,6 @@ export class CourseGeneratorGateway {
                   topics: section.topics,
                   content: 'generating...',
                   summary: 'generating...',
-                  section_number: section.number,
                   tokens_used: 0,
                   status: 'pending',
                 });
@@ -396,12 +398,14 @@ export class CourseGeneratorGateway {
             user_id: currentUser.id,
             title: courseOutput.title,
             description: courseOutput.description,
-            thumbnail_url: '',
             difficulty: course_difficulty,
+            type: 'full_course',
+            is_mandatory: false,
+            material_file_id: source.file_id,
             visibility: 'private',
             status: 'pending',
             total_lessons: 0,
-            total_sections: 0,
+            total_quizzes: 0,
           });
 
           if (!createdCourse) {
@@ -442,6 +446,7 @@ export class CourseGeneratorGateway {
               title: lessonOutput.title,
               description: lessonOutput.description,
               lesson_number: lessonOutput.number,
+              total_lesson_sections: lessonOutput.sections.length,
               status: 'pending',
             });
 
@@ -461,7 +466,6 @@ export class CourseGeneratorGateway {
                   topics: section.topics,
                   content: 'generating...',
                   summary: 'generating...',
-                  section_number: section.number,
                   tokens_used: 0,
                   status: 'pending',
                 });
@@ -591,12 +595,14 @@ export class CourseGeneratorGateway {
             user_id: currentUser.id,
             title: courseOutput.title,
             description: courseOutput.description,
-            thumbnail_url: '',
             difficulty: course_difficulty,
+            type: 'quiz_only_course',
+            is_mandatory: false,
+            material_file_id: null,
             visibility: 'private',
             status: 'pending',
             total_lessons: 0,
-            total_sections: 0,
+            total_quizzes: 0,
           });
 
           if (!createdCourse) {
@@ -655,12 +661,14 @@ export class CourseGeneratorGateway {
             user_id: currentUser.id,
             title: courseOutput.title,
             description: courseOutput.description,
-            thumbnail_url: '',
             difficulty: course_difficulty,
+            type: 'quiz_only_course',
+            is_mandatory: false,
+            material_file_id: source.file_id,
             visibility: 'private',
             status: 'pending',
             total_lessons: 0,
-            total_sections: 0,
+            total_quizzes: 0,
           });
 
           if (!createdCourse) {

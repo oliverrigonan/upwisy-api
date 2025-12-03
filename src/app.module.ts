@@ -10,8 +10,6 @@ import { CoursesModule } from './app/courses/courses.module';
 import { LessonsModule } from './app/lessons/lessons.module';
 import { LessonSectionsModule } from './app/lesson-sections/lesson-sections.module';
 import { SessionsModule } from './app/sessions/sessions.module';
-import { AssessmentsModule } from './app/assessments/assessments.module';
-import { AssessmentItemsModule } from './app/assessment-items/assessment-items.module';
 import { FilesModule } from './app/files/files.module';
 import { FileContentsModule } from './app/file-contents/file-contents.module';
 import { LearningPlansModule } from './app/learning-plans/learning-plans.module';
@@ -37,8 +35,6 @@ import { EnrollmentLessonSectionsModule } from './app/enrollment-lesson-sections
     LessonsModule,
     LessonSectionsModule,
     SessionsModule,
-    AssessmentsModule,
-    AssessmentItemsModule,
     FilesModule,
     FileContentsModule,
     LearningPlansModule,
