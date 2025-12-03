@@ -44,12 +44,15 @@ export class FilesService {
   }
 
   update(id: string, updateFileDto: UpdateFileDto) {
-    const updatedFile: Partial<File> = {
-      user_id: updateFileDto.user_id,
-      course_id: updateFileDto.course_id,
-      file_url: updateFileDto.file_url,
-      updated_at: new Date(),
-    };
+    const updatedFile: Partial<File> = {};
+
+    for (const key in updateFileDto) {
+      if (updateFileDto[key] !== undefined) {
+        updatedFile[key] = updateFileDto[key];
+      }
+    }
+
+    updatedFile.updated_at = new Date();
 
     return this.filesModel.findByIdAndUpdate(id, updatedFile, { new: true }).exec();
   }

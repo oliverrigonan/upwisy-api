@@ -1,34 +1,141 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+
+import { AuthGuard } from './../auth/auth.http-guard';
+
 import { EnrollmentQuizzesService } from './enrollment-quizzes.service';
-import { CreateEnrollmentQuizzDto } from './dto/create-enrollment-quizz.dto';
-import { UpdateEnrollmentQuizzDto } from './dto/update-enrollment-quizz.dto';
 
-@Controller('enrollment-quizzes')
+import { CreateEnrollmentQuizDto } from './dto/create-enrollment-quiz.dto';
+import { UpdateEnrollmentQuizDto } from './dto/update-enrollment-quiz.dto';
+
+@ApiTags('Enrollment Quizzes')
+@Controller('api/enrollment-quizzes')
 export class EnrollmentQuizzesController {
-  constructor(private readonly enrollmentQuizzesService: EnrollmentQuizzesService) {}
 
+  constructor(
+    private readonly enrollmentQuizzesService: EnrollmentQuizzesService
+  ) { }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Post()
-  create(@Body() createEnrollmentQuizzDto: CreateEnrollmentQuizzDto) {
-    return this.enrollmentQuizzesService.create(createEnrollmentQuizzDto);
+  async create(@Body() createEnrollmentQuizDto: CreateEnrollmentQuizDto) {
+    try {
+      return await this.enrollmentQuizzesService.create(createEnrollmentQuizDto);
+    } catch (error) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Failed to create enrollment quiz',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Get()
-  findAll() {
-    return this.enrollmentQuizzesService.findAll();
+  async findAll() {
+    return await this.enrollmentQuizzesService.findAll();
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Get('by-enrollment-id/:enrollment_id')
+  async findByEnrollmentId(@Param('enrollment_id') enrollment_id: string) {
+    const enrollmentQuizzes = await this.enrollmentQuizzesService.findByEnrollmentId(enrollment_id);
+    if (!enrollmentQuizzes || enrollmentQuizzes.length === 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No enrollment quizzes found for the specified enrollment ID',
+          error: `No enrollment quizzes found with enrollment ID ${enrollment_id}.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return enrollmentQuizzes;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.enrollmentQuizzesService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    const enrollmentQuiz = await this.enrollmentQuizzesService.findOne(id);
+    if (!enrollmentQuiz) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Enrollment quiz not found',
+          error: `The enrollment quiz with ID ${id} does not exist.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return enrollmentQuiz;
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEnrollmentQuizzDto: UpdateEnrollmentQuizzDto) {
-    return this.enrollmentQuizzesService.update(+id, updateEnrollmentQuizzDto);
+  async update(@Param('id') id: string, @Body() updateEnrollmentQuizDto: UpdateEnrollmentQuizDto) {
+    try {
+      const enrollmentQuiz = await this.enrollmentQuizzesService.findOne(id);
+      if (!enrollmentQuiz) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Enrollment quiz not found',
+            error: `The enrollment quiz with ID ${id} does not exist.`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      return this.enrollmentQuizzesService.update(id, updateEnrollmentQuizDto);
+    } catch (error) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Failed to update enrollment quiz',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.enrollmentQuizzesService.remove(+id);
+  async remove(@Param('id') id: string) {
+    try {
+      const enrollmentQuiz = await this.enrollmentQuizzesService.findOne(id);
+      if (!enrollmentQuiz) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Enrollment quiz not found',
+            error: `The enrollment quiz with ID ${id} does not exist.`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      return this.enrollmentQuizzesService.remove(id);
+    } catch (error) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Failed to remove enrollment quiz',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

@@ -41,9 +41,13 @@ export class FileContentsService {
   }
 
   update(id: string, updateFileContentDto: UpdateFileContentDto) {
-    const updatedFileContent: Partial<FileContent> = {
-      content: updateFileContentDto.content,
-    };
+    const updatedFileContent: Partial<FileContent> = {};
+
+    for (const key in updateFileContentDto) {
+      if (updateFileContentDto[key] !== undefined) {
+        updatedFileContent[key] = updateFileContentDto[key];
+      }
+    }
 
     return this.fileContentsModel.findByIdAndUpdate(id, updatedFileContent, { new: true }).exec();
   }
