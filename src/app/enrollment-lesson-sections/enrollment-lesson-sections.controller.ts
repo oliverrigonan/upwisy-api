@@ -1,34 +1,141 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+
+import { AuthGuard } from './../auth/auth.http-guard';
+
 import { EnrollmentLessonSectionsService } from './enrollment-lesson-sections.service';
+
 import { CreateEnrollmentLessonSectionDto } from './dto/create-enrollment-lesson-section.dto';
 import { UpdateEnrollmentLessonSectionDto } from './dto/update-enrollment-lesson-section.dto';
 
-@Controller('enrollment-lesson-sections')
+@ApiTags('Enrollment Lesson Sections')
+@Controller('api/enrollment-lesson-sections')
 export class EnrollmentLessonSectionsController {
-  constructor(private readonly enrollmentLessonSectionsService: EnrollmentLessonSectionsService) {}
 
+  constructor(
+    private readonly enrollmentLessonSectionsService: EnrollmentLessonSectionsService
+  ) { }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Post()
-  create(@Body() createEnrollmentLessonSectionDto: CreateEnrollmentLessonSectionDto) {
-    return this.enrollmentLessonSectionsService.create(createEnrollmentLessonSectionDto);
+  async create(@Body() createEnrollmentLessonSectionDto: CreateEnrollmentLessonSectionDto) {
+    try {
+      return await this.enrollmentLessonSectionsService.create(createEnrollmentLessonSectionDto);
+    } catch (error) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Failed to create enrollment lesson section',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Get()
-  findAll() {
-    return this.enrollmentLessonSectionsService.findAll();
+  async findAll() {
+    return await this.enrollmentLessonSectionsService.findAll();
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Get('by-enrollment-lesson-id/:enrollment_lesson_id')
+  async findByEnrollmentLessonId(@Param('enrollment_lesson_id') enrollment_lesson_id: string) {
+    const enrollmentLessonSections = await this.enrollmentLessonSectionsService.findByEnrollmentLessonId(enrollment_lesson_id);
+    if (!enrollmentLessonSections || enrollmentLessonSections.length === 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No enrollment lesson sections found for the specified enrollment lesson ID',
+          error: `No enrollment lesson sections found with enrollment lesson ID ${enrollment_lesson_id}.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return enrollmentLessonSections;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.enrollmentLessonSectionsService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    const enrollmentLessonSection = await this.enrollmentLessonSectionsService.findOne(id);
+    if (!enrollmentLessonSection) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Enrollment lesson section not found',
+          error: `The enrollment lesson section with ID ${id} does not exist.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return enrollmentLessonSection;
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEnrollmentLessonSectionDto: UpdateEnrollmentLessonSectionDto) {
-    return this.enrollmentLessonSectionsService.update(+id, updateEnrollmentLessonSectionDto);
+  async update(@Param('id') id: string, @Body() updateEnrollmentLessonSectionDto: UpdateEnrollmentLessonSectionDto) {
+    try {
+      const enrollmentLessonSection = await this.enrollmentLessonSectionsService.findOne(id);
+      if (!enrollmentLessonSection) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Enrollment lesson section not found',
+            error: `The enrollment lesson section with ID ${id} does not exist.`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      return this.enrollmentLessonSectionsService.update(id, updateEnrollmentLessonSectionDto);
+    } catch (error) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Failed to update enrollment lesson section',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.enrollmentLessonSectionsService.remove(+id);
+  async remove(@Param('id') id: string) {
+    try {
+      const enrollmentLessonSection = await this.enrollmentLessonSectionsService.findOne(id);
+      if (!enrollmentLessonSection) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Enrollment lesson-sections not found',
+            error: `The enrollment lesson-sections with ID ${id} does not exist.`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      return this.enrollmentLessonSectionsService.remove(id);
+    } catch (error) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Failed to remove enrollment lesson section',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
