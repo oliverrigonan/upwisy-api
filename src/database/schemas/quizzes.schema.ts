@@ -6,10 +6,6 @@ const QuizzesSchema = new mongoose.Schema({
     ref: 'Courses',
     required: false
   },
-  difficulty: {
-    type: String,
-    enum: ['easy', 'medium', 'hard']
-  },
   total_items: {
     type: Number,
     required: true

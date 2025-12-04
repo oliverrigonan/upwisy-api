@@ -19,7 +19,6 @@ export class QuizzesService {
   async create(createQuizDto: CreateQuizDto) {
     const newQuiz: Quiz = {
       course_id: createQuizDto.course_id,
-      difficulty: createQuizDto.difficulty,
       total_items: createQuizDto.total_items,
       status: createQuizDto.status,
       created_at: new Date(),

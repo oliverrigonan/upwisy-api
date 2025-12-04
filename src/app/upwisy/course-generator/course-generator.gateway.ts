@@ -9,13 +9,15 @@ import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-import { GenerateCourseDto, GenerationSource, GenerationCourseDifficulty } from './dto/generate-course.dto';
+import { GenerateCourseDto, GenerateFullCourseDto, GenerateQuizOnlyCourseDto } from './dto/generate-course.dto';
 import { GenerationProgress } from './../interfaces/generation-progress.interface';
 
 import { UsersService, UserDocument } from './../../users/users.service';
 import { CoursesService } from './../../courses/courses.service';
 import { LessonsService } from './../../lessons/lessons.service';
 import { LessonSectionsService } from './../../lesson-sections/lesson-sections.service';
+import { QuizzesService } from './../../quizzes/quizzes.service';
+import { QuizItemsService } from './../../quiz-items/quiz-items.service';
 import { FileContentsService } from './../../file-contents/file-contents.service';
 
 import { CreateLessonSectionDto } from './../../lesson-sections/dto/create-lesson-section.dto';
@@ -36,6 +38,8 @@ export class CourseGeneratorGateway {
     private readonly coursesService: CoursesService,
     private readonly lessonsService: LessonsService,
     private readonly lessonSectionsService: LessonSectionsService,
+    private readonly quizzesService: QuizzesService,
+    private readonly quizItemsService: QuizItemsService,
     private readonly fileContentsService: FileContentsService,
   ) { }
 
@@ -73,7 +77,7 @@ export class CourseGeneratorGateway {
     correct_answer: z.string(),
   });
   quizItemsStructure = z.object({
-    assessmentItems: z.array(this.quizItemStructure)
+    items: z.array(this.quizItemStructure)
   });
 
   async getCurrentUser(socket: Socket): Promise<UserDocument | null> {
@@ -146,16 +150,20 @@ export class CourseGeneratorGateway {
       if (data.type.value === "full_course") {
         await this.generateFullCourse(
           socket,
-          data.source,
-          data.course_difficulty
+          {
+            source: data.type.source,
+            difficulty: data.difficulty
+          }
         );
       }
 
       if (data.type.value === "quiz_only_course") {
         await this.generateQuizOnlyCourse(
           socket,
-          data.source,
-          data.course_difficulty
+          {
+            file_id: data.type.file_id,
+            difficulty: data.difficulty
+          }
         );
       }
     } catch (error) {
@@ -166,8 +174,7 @@ export class CourseGeneratorGateway {
 
   private async generateFullCourse(
     socket: Socket,
-    source: GenerationSource,
-    course_difficulty: GenerationCourseDifficulty,
+    params: GenerateFullCourseDto,
   ) {
     try {
       const currentUser = await this.getCurrentUser(socket);
@@ -175,16 +182,15 @@ export class CourseGeneratorGateway {
 
       let currentProgress = 0;
 
-      switch (source.value) {
+      switch (params.source.value) {
         case "subject": {
           const courseInstructions = String.raw`
             You are an expert course designer. Given the subject provided by the user, create a comprehensive course.
             The course should include a detailed title and an in-depth description that covers the scope, objectives, and key learning outcomes.
-            The course should be tailored for a ${course_difficulty} difficulty level.
             Ensure the description is informative and gives a clear overview of what the course will cover.
             Provide the response in the specified structured format.
           `;
-          const courseContent = `Subject: ${source.subject}`;
+          const courseContent = `Subject: ${params.source.subject}`;
 
           const courseResponse = await this.generateWithStructure(
             courseInstructions,
@@ -203,7 +209,7 @@ export class CourseGeneratorGateway {
             user_id: currentUser.id,
             title: courseOutput.title,
             description: courseOutput.description,
-            difficulty: course_difficulty,
+            difficulty: params.difficulty,
             type: 'full_course',
             is_mandatory: false,
             material_file_id: null,
@@ -222,7 +228,7 @@ export class CourseGeneratorGateway {
             You are an expert course designer. Based on the course title and description provided, create a detailed list of lessons. 
             Each lesson should have a number, title, description, and a list of sections. 
             Each section should include a number, title, and topics covered.
-            The lessons should be tailored for a ${course_difficulty} difficulty level.
+            The lessons should be tailored for a ${params.difficulty} difficulty level.
             Ensure the lessons are well-structured and cover all essential aspects of the subject.
             Provide the response in the specified structured format.
           `;
@@ -308,6 +314,7 @@ export class CourseGeneratorGateway {
 
                 const lessonSectionInstructions = String.raw`
                   You are an expert content creator. Given the lesson title, previous section summary, section title, and topics, create detailed content for the lesson section.
+                  The content should be tailored for a ${params.difficulty} difficulty level.
                   Ensure the content is informative, engaging, and covers all topics provided.
                   Additionally, provide a concise summary of the section content for future reference.
                   Provide the response in the specified structured format.
@@ -362,7 +369,7 @@ export class CourseGeneratorGateway {
         }
 
         case "file": {
-          const fileContents = await this.fileContentsService.findByFileId(source.file_id);
+          const fileContents = await this.fileContentsService.findByFileId(params.source.file_id);
           if (!fileContents || fileContents.length === 0) {
             socket.emit('error', 'No content found for the provided file.');
             return;
@@ -371,12 +378,9 @@ export class CourseGeneratorGateway {
           const firstFileContent = fileContents[0]?.content || "";
 
           const courseInstructions = String.raw`
-            You are an expert course designer. Given the content of the file provided by the user, create a comprehensive course outline.
-            The course should include a title, description, and a list of lessons. 
-            Each lesson should have a number, title, description, and a list of sections. 
-            Each section should include a number, title, and topics covered.
-            The course should be tailored for a ${course_difficulty} difficulty level.
-            Ensure the course is well-structured and covers all essential aspects of the subject.
+            You are an expert course designer. Given the content of the file provided by the user, create a comprehensive course.
+            The course should include a detailed title and an in-depth description that covers the scope, objectives, and key learning outcomes.
+            Ensure the description is informative and gives a clear overview of what the course will cover.
             Provide the response in the specified structured format.
           `;
           const courseContent = `File Content: ${firstFileContent}`;
@@ -398,10 +402,10 @@ export class CourseGeneratorGateway {
             user_id: currentUser.id,
             title: courseOutput.title,
             description: courseOutput.description,
-            difficulty: course_difficulty,
+            difficulty: params.difficulty,
             type: 'full_course',
             is_mandatory: false,
-            material_file_id: source.file_id,
+            material_file_id: params.source.file_id,
             visibility: 'private',
             status: 'pending',
             total_lessons: 0,
@@ -422,7 +426,7 @@ export class CourseGeneratorGateway {
               You are an expert course designer. Based on the course title and description provided, create a detailed lesson. 
               The lesson should have a number, title, description, and a list of sections. 
               Each section should include a number, title, and topics covered.
-              The lesson should be tailored for a ${course_difficulty} difficulty level.
+              The lesson should be tailored for a ${params.difficulty} difficulty level.
               Ensure the lesson is well-structured and covers all essential aspects of the subject.
               Provide the response in the specified structured format.
             `;
@@ -494,6 +498,7 @@ export class CourseGeneratorGateway {
 
                 const lessonSectionInstructions = String.raw`
                   You are an expert content creator. Given the lesson title, previous section summary, section title, and topics, create detailed content for the lesson section.
+                  The content should be tailored for a ${params.difficulty} difficulty level.
                   Ensure the content is informative, engaging, and covers all topics provided.
                   Additionally, provide a concise summary of the section content for future reference.
                   Provide the response in the specified structured format.
@@ -556,149 +561,138 @@ export class CourseGeneratorGateway {
 
   private async generateQuizOnlyCourse(
     socket: Socket,
-    source: GenerationSource,
-    course_difficulty: GenerationCourseDifficulty,
+    params: GenerateQuizOnlyCourseDto,
   ) {
-
     try {
       const currentUser = await this.getCurrentUser(socket);
       if (!currentUser) return;
 
       let currentProgress = 0;
 
-      switch (source.value) {
-        case "subject": {
-          const courseInstructions = String.raw`
-            You are an expert course designer. Given the subject provided by the user, create a quiz-only course.
-            The course should include a title and a detailed description that covers the scope and objectives of the quiz.
-            The course should be tailored for a ${course_difficulty} difficulty level.
-            This course is intended for assessment purposes only and will not include lessons or sections.
-            Ensure the description is informative and gives a clear overview of what will be assessed.
-            Provide the response in the specified structured format.
-          `;
-          const courseContent = `Subject: ${source.subject}`;
-
-          const courseResponse = await this.generateWithStructure(
-            courseInstructions,
-            courseContent,
-            this.courseSchema,
-            "course"
-          );
-
-          const courseOutput = courseResponse.output_parsed;
-          if (!courseOutput) {
-            socket.emit('error', 'Failed to parse course output.');
-            return;
-          }
-
-          const createdCourse = await this.coursesService.create({
-            user_id: currentUser.id,
-            title: courseOutput.title,
-            description: courseOutput.description,
-            difficulty: course_difficulty,
-            type: 'quiz_only_course',
-            is_mandatory: false,
-            material_file_id: null,
-            visibility: 'private',
-            status: 'pending',
-            total_lessons: 0,
-            total_quizzes: 0,
-          });
-
-          if (!createdCourse) {
-            socket.emit('error', 'Failed to create course record.');
-            return;
-          }
-
-
-
-          await this.coursesService.update(createdCourse.id, {
-            status: 'ready',
-          });
-
-          const generationProgress: GenerationProgress = {
-            progress: currentProgress,
-            message: 'Generation completed successfully.',
-          };
-          socket.emit('generation-progress', generationProgress);
-
-          break;
-        }
-
-        case "file": {
-          const fileContents = await this.fileContentsService.findByFileId(source.file_id);
-          if (!fileContents || fileContents.length === 0) {
-            socket.emit('error', 'No content found for the provided file.');
-            return;
-          }
-
-          const firstFileContent = fileContents[0]?.content || "";
-
-          const courseInstructions = String.raw`
-            You are an expert course designer. Given the content of the file provided by the user, create a quiz-only course.
-            The course should include a title and a detailed description that covers the scope and objectives of the quiz.
-            The course should be tailored for a ${course_difficulty} difficulty level.
-            This course is intended for assessment purposes only and will not include lessons or sections.
-            Ensure the description is informative and gives a clear overview of what will be assessed.
-            Provide the response in the specified structured format.
-          `;
-          const courseContent = `File Content: ${firstFileContent}`;
-
-          const courseResponse = await this.generateWithStructure(
-            courseInstructions,
-            courseContent,
-            this.courseSchema,
-            "course"
-          );
-
-          const courseOutput = courseResponse.output_parsed;
-          if (!courseOutput) {
-            socket.emit('error', 'Failed to parse course output.');
-            return;
-          }
-
-          const createdCourse = await this.coursesService.create({
-            user_id: currentUser.id,
-            title: courseOutput.title,
-            description: courseOutput.description,
-            difficulty: course_difficulty,
-            type: 'quiz_only_course',
-            is_mandatory: false,
-            material_file_id: source.file_id,
-            visibility: 'private',
-            status: 'pending',
-            total_lessons: 0,
-            total_quizzes: 0,
-          });
-
-          if (!createdCourse) {
-            socket.emit('error', 'Failed to create course record.');
-            return;
-          }
-
-          let totalItemsProcessed = 0;
-
-          for (let i = 0; i < fileContents.length; i++) {
-            // const fileContent = fileContents[i];
-
-            totalItemsProcessed++;
-
-            currentProgress = (totalItemsProcessed / fileContents.length) * 100;
-            const generationProgress: GenerationProgress = {
-              progress: currentProgress,
-              message: 'Generated ' + totalItemsProcessed + ' of ' + fileContents.length,
-            };
-            socket.emit('generation-progress', generationProgress);
-          }
-
-          break;
-        }
-
-        default: {
-          socket.emit('error', 'Invalid generation source type.');
-          break;
-        }
+      const fileContents = await this.fileContentsService.findByFileId(params.file_id);
+      if (!fileContents || fileContents.length === 0) {
+        socket.emit('error', 'No content found for the provided file.');
+        return;
       }
+
+      const firstFileContent = fileContents[0]?.content || "";
+
+      const courseInstructions = String.raw`
+        You are an expert course designer. Given the content of the file provided by the user, create a comprehensive quiz-only course.
+        The course should include a detailed title and an in-depth description that covers the scope, objectives, and key learning outcomes.
+        This is a quiz-only course, so the description should emphasize assessment and knowledge evaluation.
+        Ensure the description is informative and gives a clear overview of what will be assessed.
+        Provide the response in the specified structured format.
+      `;
+      const courseContent = `File Content: ${firstFileContent}`;
+
+      const courseResponse = await this.generateWithStructure(
+        courseInstructions,
+        courseContent,
+        this.courseSchema,
+        "course"
+      );
+
+      const courseOutput = courseResponse.output_parsed;
+      if (!courseOutput) {
+        socket.emit('error', 'Failed to parse course output.');
+        return;
+      }
+
+      const createdCourse = await this.coursesService.create({
+        user_id: currentUser.id,
+        title: courseOutput.title,
+        description: courseOutput.description,
+        difficulty: params.difficulty,
+        type: 'quiz_only_course',
+        is_mandatory: false,
+        material_file_id: null,
+        visibility: 'private',
+        status: 'pending',
+        total_lessons: 0,
+        total_quizzes: 0,
+      });
+
+      if (!createdCourse) {
+        socket.emit('error', 'Failed to create course record.');
+        return;
+      }
+
+      const createdQuiz = await this.quizzesService.create({
+        course_id: createdCourse.id,
+        total_items: 0,
+        status: 'pending',
+      });
+
+      if (!createdQuiz) {
+        socket.emit('error', 'Failed to create quiz record.');
+        return;
+      }
+
+      let totalQuizItems = 0;
+      let totalItemsProcessed = 0;
+
+      for (let i = 0; i < fileContents.length; i++) {
+        const fileContent = fileContents[i];
+
+        const quizItemsInstructions = String.raw`
+          You are an expert quiz creator. Based on the course title and description provided, create a set of at least 5 to 10 quiz items. 
+          Each quiz item should have a number, question, multiple options, and the correct answer.
+          The quiz items should be tailored for a ${params.difficulty} difficulty level.
+          Ensure the quiz items are well-structured and effectively assess knowledge of the subject.
+          Provide the response in the specified structured format.
+        `;
+        const quizItemsContent = `Course Title: ${courseOutput.title}\nCourse Description: ${courseOutput.description}\n\nFile Content:\n${fileContent.content}`;
+
+        const quizItemsResponse = await this.generateWithStructure(
+          quizItemsInstructions,
+          quizItemsContent,
+          this.quizItemsStructure,
+          "quiz_items"
+        );
+
+        const quizItemsOutput = quizItemsResponse.output_parsed;
+        if (!quizItemsOutput) {
+          socket.emit('error', 'Failed to parse quiz items output.');
+          return;
+        }
+
+        const createdQuizItems = await this.quizItemsService.createMany(
+          quizItemsOutput.items.map(item => ({
+            quiz_id: createdQuiz.id,
+            type: 'multiple_choice',
+            question: item.question,
+            options: item.options,
+            correct_answer: item.correct_answer,
+            answer_explanation: '',
+            status: 'ready',
+          }))
+        );
+
+        if (!createdQuizItems || createdQuizItems.length === 0) {
+          socket.emit('error', 'Failed to create quiz item records.');
+          return;
+        }
+
+        totalQuizItems += createdQuizItems.length;
+        totalItemsProcessed++;
+
+        currentProgress = (totalItemsProcessed / fileContents.length) * 100;
+        const generationProgress: GenerationProgress = {
+          progress: currentProgress,
+          message: 'Generated ' + totalItemsProcessed + ' of ' + fileContents.length,
+        };
+        socket.emit('generation-progress', generationProgress);
+      }
+
+      await this.quizzesService.update(createdQuiz.id, {
+        total_items: totalQuizItems,
+        status: 'ready',
+      });
+
+      await this.coursesService.update(createdCourse.id, {
+        status: 'ready',
+      });
 
       const generationProgress: GenerationProgress = {
         progress: currentProgress,
