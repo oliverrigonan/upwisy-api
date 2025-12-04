@@ -25,17 +25,6 @@ export class QuizzesController {
   @Get('by-course-id/:course_id')
   async findByCourseId(@Param('course_id') course_id: string) {
     const quizzes = await this.quizzesService.findByCourseId(course_id);
-    if (!quizzes || quizzes.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No quizzes found for the specified course ID',
-          error: `No quizzes found with course ID ${course_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return quizzes;
   }
 

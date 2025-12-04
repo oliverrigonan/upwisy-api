@@ -25,17 +25,6 @@ export class LessonSectionsController {
   @Get('by-lesson-id/:lesson_id')
   async findByLessonId(@Param('lesson_id') lesson_id: string) {
     const lessonSections = await this.lessonSectionsService.findByLessonId(lesson_id);
-    if (!lessonSections || lessonSections.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No lesson section found for the specified lesson ID',
-          error: `No lesson section found with lesson ID ${lesson_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return lessonSections;
   }
 

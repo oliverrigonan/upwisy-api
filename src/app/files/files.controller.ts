@@ -41,17 +41,6 @@ export class FilesController {
   @Get('by-user-id/:user_id')
   async findByUserId(@Param('user_id') user_id: string) {
     const files = await this.filesService.findByUserId(user_id);
-    if (!files || files.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No files found for the specified user ID',
-          error: `No files found with user ID ${user_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return files;
   }
 

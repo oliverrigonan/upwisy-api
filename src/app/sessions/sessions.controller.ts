@@ -13,7 +13,7 @@ import { UpdateSessionDto } from './dto/update-session.dto';
 export class SessionsController {
 
   constructor(
-    private readonly SessionsService: SessionsService
+    private readonly sessionsService: SessionsService
   ) { }
 
   @ApiBearerAuth()
@@ -21,12 +21,12 @@ export class SessionsController {
   @Post()
   async create(@Body() createSessionDto: CreateSessionDto) {
     try {
-      return await this.SessionsService.create(createSessionDto);
+      return await this.sessionsService.create(createSessionDto);
     } catch (error) {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to create  session',
+          message: 'Failed to create session',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -38,45 +38,34 @@ export class SessionsController {
   @UseGuards(AuthGuard)
   @Get()
   async findAll() {
-    return await this.SessionsService.findAll();
+    return await this.sessionsService.findAll();
   }
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Get('by--id/:_id')
   async findById(@Param('_id') _id: string) {
-    const Sessions = await this.SessionsService.findById(_id);
-    if (!Sessions || Sessions.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No  sessions found for the specified  ID',
-          error: `No  sessions found with  ID ${_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    return Sessions;
+    const sessions = await this.sessionsService.findById(_id);
+    return sessions;
   }
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    const Session = await this.SessionsService.findOne(id);
-    if (!Session) {
+    const session = await this.sessionsService.findOne(id);
+    if (!session) {
       throw new HttpException(
         {
           statusCode: HttpStatus.NOT_FOUND,
-          message: ' session not found',
-          error: `The  session with ID ${id} does not exist.`,
+          message: 'Session not found',
+          error: `The session with ID ${id} does not exist.`,
         },
         HttpStatus.NOT_FOUND,
       );
     }
 
-    return Session;
+    return session;
   }
 
   @ApiBearerAuth()
@@ -84,19 +73,19 @@ export class SessionsController {
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateSessionDto: UpdateSessionDto) {
     try {
-      const Session = await this.SessionsService.findOne(id);
-      if (!Session) {
+      const session = await this.sessionsService.findOne(id);
+      if (!session) {
         throw new HttpException(
           {
             statusCode: HttpStatus.NOT_FOUND,
-            message: ' session not found',
-            error: `The  session with ID ${id} does not exist.`,
+            message: 'Session not found',
+            error: `The session with ID ${id} does not exist.`,
           },
           HttpStatus.NOT_FOUND,
         );
       }
 
-      return this.SessionsService.update(id, updateSessionDto);
+      return this.sessionsService.update(id, updateSessionDto);
     } catch (error) {
       throw new HttpException(
         {
@@ -114,24 +103,24 @@ export class SessionsController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     try {
-      const Session = await this.SessionsService.findOne(id);
-      if (!Session) {
+      const session = await this.sessionsService.findOne(id);
+      if (!session) {
         throw new HttpException(
           {
             statusCode: HttpStatus.NOT_FOUND,
-            message: ' session not found',
-            error: `The  session with ID ${id} does not exist.`,
+            message: 'Session not found',
+            error: `The session with ID ${id} does not exist.`,
           },
           HttpStatus.NOT_FOUND,
         );
       }
 
-      return this.SessionsService.remove(id);
+      return this.sessionsService.remove(id);
     } catch (error) {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to remove  session',
+          message: 'Failed to remove session',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

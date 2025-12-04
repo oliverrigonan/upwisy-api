@@ -25,17 +25,6 @@ export class LessonsController {
   @Get('by-course-id/:course_id')
   async findByCourseId(@Param('course_id') course_id: string) {
     const lessons = await this.lessonsService.findByCourseId(course_id);
-    if (!lessons || lessons.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No lessons found for the specified course ID',
-          error: `No lessons found with course ID ${course_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return lessons;
   }
 

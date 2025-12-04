@@ -46,17 +46,6 @@ export class LearningPlansController {
   @Get('by-date/:date')
   async findByDate(@Param('date') date: string) {
     const learningPlans = await this.learningPlansService.findByDate(date);
-    if (!learningPlans || learningPlans.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No learning plans found for the specified date',
-          error: `No learning plans found with date ${date}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return learningPlans;
   }
 
@@ -65,17 +54,6 @@ export class LearningPlansController {
   @Get('by-user-id/:user_id')
   async findByUserId(@Param('user_id') user_id: string) {
     const learningPlans = await this.learningPlansService.findByUserId(user_id);
-    if (!learningPlans || learningPlans.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No learning plans found for the specified user ID',
-          error: `No learning plans found with user ID ${user_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return learningPlans;
   }
 

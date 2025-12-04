@@ -25,17 +25,6 @@ export class FileContentsController {
   @Get('by-file-id/:file_id')
   async findByFileId(@Param('file_id') file_id: string) {
     const fileContents = await this.fileContentsService.findByFileId(file_id);
-    if (!fileContents || fileContents.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No file contents found for the specified file ID',
-          error: `No file contents found with file ID ${file_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return fileContents;
   }
 
