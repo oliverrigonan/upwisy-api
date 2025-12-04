@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 
-import { FilesService } from './files.service';
 import { FilesController } from './files.controller';
+
+import { FilesService } from './files.service';
+import { FileContentsService } from '../file-contents/file-contents.service';
 
 import { DatabaseModule } from './../../database/database.module';
 import { FilesModelProvider } from './../../database/schemas/files.schema';
+import { FileContentsModelProvider } from './../../database/schemas/file-contents.schema';
 
 @Module({
   controllers: [
@@ -12,7 +15,10 @@ import { FilesModelProvider } from './../../database/schemas/files.schema';
   ],
   providers: [
     FilesService,
-    FilesModelProvider
+    FileContentsService,
+
+    FilesModelProvider,
+    FileContentsModelProvider
   ],
   imports: [DatabaseModule],
 })

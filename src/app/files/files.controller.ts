@@ -1,48 +1,33 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards,
+  Controller, Get, Post, Param, Delete, HttpException, HttpStatus, UseGuards,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
   Req,
 } from '@nestjs/common';
-import type { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
+
+import type { Request } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-import { ApiTags, ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { PDFParse } from 'pdf-parse';
 
 import { AuthGuard } from './../auth/auth.http-guard';
 
 import { FilesService } from './files.service';
+import { FileContentsService } from '../file-contents/file-contents.service';
 
 import { CreateFileDto } from './dto/create-file.dto';
-import { UpdateFileDto } from './dto/update-file.dto';
 
 @ApiTags('Files')
 @Controller('api/files')
 export class FilesController {
 
   constructor(
-    private readonly filesService: FilesService
+    private readonly filesService: FilesService,
+    private readonly fileContentsService: FileContentsService,
   ) { }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Post()
-  async create(@Body() createFileDto: CreateFileDto) {
-    try {
-      return await this.filesService.create(createFileDto);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to create file',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
@@ -87,36 +72,6 @@ export class FilesController {
     }
 
     return file;
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateFileDto: UpdateFileDto) {
-    try {
-      const file = await this.filesService.findOne(id);
-      if (!file) {
-        throw new HttpException(
-          {
-            statusCode: HttpStatus.NOT_FOUND,
-            message: 'File not found',
-            error: `The file with ID ${id} does not exist.`,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      return this.filesService.update(id, updateFileDto);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to update file',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
   }
 
   @ApiBearerAuth()
@@ -189,11 +144,27 @@ export class FilesController {
   ) {
     try {
       if (!file) throw new BadRequestException('No file uploaded');
+
+      if (file.mimetype !== 'application/pdf') {
+        throw new BadRequestException('Only PDF files are allowed');
+      }
+
       const host = req.protocol + '://' + req.get('host');
       const filePath = `${host}/uploads/${file.filename}`;
-
       const currentUser = req.user as any;
       const userId = currentUser?.userId;
+
+      const parser = new PDFParse({ url: filePath });
+      const pdfData = await parser.getText();
+      const pdfText = pdfData.text;
+
+      const words = pdfText.split(/\s+/).filter(word => word.length > 0);
+      const chunks: string[] = [];
+
+      for (let i = 0; i < words.length; i += 1000) {
+        const chunk = words.slice(i, i + 1000).join(' ');
+        chunks.push(chunk);
+      }
 
       const newFile: CreateFileDto = {
         user_id: userId,
@@ -201,7 +172,16 @@ export class FilesController {
         file_url: filePath,
       };
 
-      return await this.filesService.create(newFile);
+      const createdFile = await this.filesService.create(newFile);
+
+      await this.fileContentsService.createMany(
+        chunks.map(chunk => ({
+          file_id: createdFile.id,
+          content: chunk,
+        })),
+      );
+
+      return createdFile;
     } catch (error) {
       throw new HttpException(
         {

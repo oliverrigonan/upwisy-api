@@ -26,6 +26,16 @@ export class FileContentsService {
     return await createdFileContent.save();
   }
 
+  async createMany(createFileContentDtos: CreateFileContentDto[]) {
+    const newFileContents: FileContent[] = createFileContentDtos.map(createFileContentDto => ({
+      file_id: createFileContentDto.file_id,
+      content: createFileContentDto.content,
+    }));
+
+    const createdFileContents = await this.fileContentsModel.insertMany(newFileContents);
+    return createdFileContents;
+  }
+
   async findAll() {
     return await this.fileContentsModel.find().exec();
   }
