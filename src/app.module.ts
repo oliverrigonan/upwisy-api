@@ -9,12 +9,6 @@ import { UsersModule } from './app/users/users.module';
 import { CoursesModule } from './app/courses/courses.module';
 import { LessonsModule } from './app/lessons/lessons.module';
 import { LessonSectionsModule } from './app/lesson-sections/lesson-sections.module';
-import { SessionsModule } from './app/sessions/sessions.module';
-import { FilesModule } from './app/files/files.module';
-import { FileContentsModule } from './app/file-contents/file-contents.module';
-import { LearningPlansModule } from './app/learning-plans/learning-plans.module';
-import { OpenaiModule } from './app/openai/openai.module';
-import { UpwisyModule } from './app/upwisy/upwisy.module';
 import { QuizzesModule } from './app/quizzes/quizzes.module';
 import { QuizItemsModule } from './app/quiz-items/quiz-items.module';
 import { EnrollmentsModule } from './app/enrollments/enrollments.module';
@@ -22,6 +16,12 @@ import { EnrollmentQuizzesModule } from './app/enrollment-quizzes/enrollment-qui
 import { EnrollmentQuizItemsModule } from './app/enrollment-quiz-items/enrollment-quiz-items.module';
 import { EnrollmentLessonsModule } from './app/enrollment-lessons/enrollment-lessons.module';
 import { EnrollmentLessonSectionsModule } from './app/enrollment-lesson-sections/enrollment-lesson-sections.module';
+import { SessionsModule } from './app/sessions/sessions.module';
+import { OpenaiModule } from './app/openai/openai.module';
+import { UpwisyModule } from './app/upwisy/upwisy.module';
+import { LearningPlansModule } from './app/learning-plans/learning-plans.module';
+import { FilesModule } from './app/files/files.module';
+import { FileContentsModule } from './app/file-contents/file-contents.module';
 
 @Module({
   imports: [
@@ -34,12 +34,6 @@ import { EnrollmentLessonSectionsModule } from './app/enrollment-lesson-sections
     CoursesModule,
     LessonsModule,
     LessonSectionsModule,
-    SessionsModule,
-    FilesModule,
-    FileContentsModule,
-    LearningPlansModule,
-    OpenaiModule,
-    UpwisyModule,
     QuizzesModule,
     QuizItemsModule,
     EnrollmentsModule,
@@ -47,6 +41,12 @@ import { EnrollmentLessonSectionsModule } from './app/enrollment-lesson-sections
     EnrollmentQuizItemsModule,
     EnrollmentLessonsModule,
     EnrollmentLessonSectionsModule,
+    SessionsModule,
+    OpenaiModule,
+    UpwisyModule,
+    LearningPlansModule,
+    FilesModule,
+    FileContentsModule,
   ],
   controllers: [
     AppController,

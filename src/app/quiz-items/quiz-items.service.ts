@@ -12,7 +12,7 @@ export type QuizItemDocument = HydratedDocument<QuizItem>;
 export class QuizItemsService {
 
   constructor(
-    @Inject('LESSON_SECTIONS_MODEL')
+    @Inject('QUIZ_ITEMS_MODEL')
     private quizItemsModel: Model<QuizItemDocument>,
   ) { }
 
