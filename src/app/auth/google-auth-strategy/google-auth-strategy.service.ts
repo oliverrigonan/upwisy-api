@@ -46,6 +46,7 @@ export class GoogleAuthStrategyService extends PassportStrategy(Strategy, 'googl
       done(null, {
         provider: 'google',
         providerId: id,
+        userId: user?.id,
         email: emails?.[0]?.value ?? null,
         firstName: name?.givenName ?? null,
         lastName: name?.familyName ?? null,

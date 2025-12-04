@@ -13,7 +13,7 @@ export class AuthService {
   googleLogin(user: LoginGoogleOauthDto) {
     if (!user) return { message: 'No user from Google' };
 
-    const payload = { email: user.email, sub: user.providerId };
+    const payload = { email: user.email, sub: user.providerId, userId: user.userId };
     const token = this.jwtService.sign(payload);
 
     return {

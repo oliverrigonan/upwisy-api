@@ -148,23 +148,17 @@ export class CourseGeneratorGateway {
   ): Promise<void> {
     try {
       if (data.type.value === "full_course") {
-        await this.generateFullCourse(
-          socket,
-          {
-            source: data.type.source,
-            difficulty: data.difficulty
-          }
-        );
+        await this.generateFullCourse(socket, {
+          source: data.type.params.source,
+          difficulty: data.difficulty
+        });
       }
 
       if (data.type.value === "quiz_only_course") {
-        await this.generateQuizOnlyCourse(
-          socket,
-          {
-            file_id: data.type.file_id,
-            difficulty: data.difficulty
-          }
-        );
+        await this.generateQuizOnlyCourse(socket, {
+          file_id: data.type.params.file_id,
+          difficulty: data.difficulty
+        });
       }
     } catch (error) {
       socket.emit('error', 'An Error Occurred: ' + error.message);
@@ -184,6 +178,12 @@ export class CourseGeneratorGateway {
 
       switch (params.source.value) {
         case "subject": {
+          let generationProgress: GenerationProgress = {
+            progress: currentProgress,
+            message: 'Starting generation process...',
+          };
+          socket.emit('generation-progress', generationProgress);
+
           const courseInstructions = String.raw`
             You are an expert course designer. Given the subject provided by the user, create a comprehensive course.
             The course should include a detailed title and an in-depth description that covers the scope, objectives, and key learning outcomes.
@@ -294,6 +294,12 @@ export class CourseGeneratorGateway {
             return;
           }
 
+          generationProgress = {
+            progress: currentProgress,
+            message: 'Course and lessons created successfully. Starting content generation...',
+          };
+          socket.emit('generation-progress', generationProgress);
+
           let totalItemsProcessed = 0;
 
           for (let i = 0; i < createdLessons.length; i++) {
@@ -346,7 +352,7 @@ export class CourseGeneratorGateway {
                 totalItemsProcessed++;
 
                 currentProgress = (totalItemsProcessed / createdLessonSections.length) * 100;
-                const generationProgress: GenerationProgress = {
+                generationProgress = {
                   progress: currentProgress,
                   message: 'Generated ' + totalItemsProcessed + ' of ' + createdLessonSections.length,
                 };
@@ -359,7 +365,7 @@ export class CourseGeneratorGateway {
             status: 'ready',
           });
 
-          const generationProgress: GenerationProgress = {
+          generationProgress = {
             progress: currentProgress,
             message: 'Generation completed successfully.',
           };

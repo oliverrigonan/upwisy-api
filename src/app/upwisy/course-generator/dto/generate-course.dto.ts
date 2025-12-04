@@ -8,12 +8,16 @@ export type GenerationDifficulty = typeof DIFFICULTY_LEVELS[number];
 export type GenerationType =
   | {
     value: 'full_course';
-    source: GenerationSource;
-    is_mandatory: boolean;
+    params: {
+      source: GenerationSource;
+      is_mandatory: boolean;
+    }
   }
   | {
     value: 'quiz_only_course';
-    file_id: string;
+    params: {
+      file_id: string;
+    }
   };
 
 export class GenerateCourseDto {

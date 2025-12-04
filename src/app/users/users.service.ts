@@ -46,7 +46,7 @@ export class UsersService {
     return await this.usersModel.findById(id).exec();
   }
 
-  async findOneByGoogleAccountId(google_account_id: string): Promise<User | null> {
+  async findOneByGoogleAccountId(google_account_id: string) {
     const user = await this.usersModel.findOne({
       google_account_id: google_account_id
     }).exec();

@@ -1,5 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
+  Req,
+} from '@nestjs/common';
+import type { Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { ApiTags, ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 
 import { AuthGuard } from './../auth/auth.http-guard';
 
@@ -127,6 +137,71 @@ export class FilesController {
       }
 
       return this.filesService.remove(id);
+    } catch (error) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Failed to remove file',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Post('upload/:course_id')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, unique + extname(file.originalname));
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (file.mimetype !== 'application/pdf') {
+          return callback(new BadRequestException('Only PDF allowed'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    }),
+  )
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: Request,
+    @Param('course_id') course_id: string,
+  ) {
+    try {
+      if (!file) throw new BadRequestException('No file uploaded');
+      const host = req.protocol + '://' + req.get('host');
+      const filePath = `${host}/uploads/${file.filename}`;
+
+      const currentUser = req.user as any;
+      const userId = currentUser?.userId;
+
+      const newFile: CreateFileDto = {
+        user_id: userId,
+        course_id: course_id,
+        file_url: filePath,
+      };
+
+      return await this.filesService.create(newFile);
     } catch (error) {
       throw new HttpException(
         {
