@@ -11,8 +11,8 @@ export class CreateEnrollmentLessonSectionDto {
   status: string;
 
   @ApiProperty()
-  started_at: Date;
+  started_at: Date | null;
 
   @ApiProperty()
-  completed_at: Date;
+  completed_at: Date | null;
 }

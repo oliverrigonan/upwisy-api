@@ -8,11 +8,11 @@ export class CreateEnrollmentQuizItemDto {
   quiz_item_id: string;
 
   @ApiProperty()
-  user_answer: string;
+  user_answer: string | null;
 
   @ApiProperty()
   is_correct: boolean;
 
   @ApiProperty()
-  answered_at: Date;
+  answered_at: Date | null;
 }

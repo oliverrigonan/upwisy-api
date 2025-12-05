@@ -8,7 +8,7 @@ export class CreateEnrollmentQuizDto {
   quiz_id: string;
 
   @ApiProperty()
-  date_taken: Date;
+  date_taken: Date | null;
 
   @ApiProperty()
   total_quiz_items: number;

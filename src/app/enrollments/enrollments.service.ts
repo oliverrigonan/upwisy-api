@@ -37,17 +37,54 @@ export class EnrollmentsService {
   }
 
   async findAll() {
-    return await this.enrollmentsModel.find().exec();
+    return await this.enrollmentsModel.find()
+      .populate('course')
+      .populate('session')
+      .populate('user', 'full_name email photo_url')
+      .exec();
+  }
+
+  async findByCourseId(course_id: string) {
+    return await this.enrollmentsModel
+      .find({
+        course_id: course_id,
+      })
+      .populate('course')
+      .populate('session')
+      .populate('user', 'full_name email photo_url created_at updated_at')
+      .exec();
   }
 
   async findByUserId(user_id: string) {
-    return await this.enrollmentsModel.find({
-      user_id: user_id,
-    }).exec();
+    return await this.enrollmentsModel
+      .find({
+        user_id: user_id,
+      })
+      .populate('course')
+      .populate('session')
+      .populate('user', 'full_name email photo_url created_at updated_at')
+      .exec();
+  }
+
+  async findByUserIdAndCourseId(user_id: string, course_id: string) {
+    return await this.enrollmentsModel
+      .find({
+        user_id: user_id,
+        course_id: course_id,
+      })
+      .populate('course')
+      .populate('session')
+      .populate('user', 'full_name email photo_url created_at updated_at')
+      .exec();
   }
 
   async findOne(id: string) {
-    return await this.enrollmentsModel.findById(id).exec();
+    return await this.enrollmentsModel
+      .findById(id)
+      .populate('course')
+      .populate('session')
+      .populate('user', 'full_name email photo_url created_at updated_at')
+      .exec();
   }
 
   update(id: string, updateEnrollmentDto: UpdateEnrollmentDto) {

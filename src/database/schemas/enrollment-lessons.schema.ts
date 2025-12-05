@@ -29,7 +29,8 @@ const EnrollmentLessonsSchema = new mongoose.Schema({
   },
   completed_at: {
     type: Date,
-    required: false
+    default: null,
+    required: false,
   }
 });
 

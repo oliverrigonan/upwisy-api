@@ -13,8 +13,8 @@ const EnrollmentQuizzesSchema = new mongoose.Schema({
   },
   date_taken: {
     type: Date,
-    default: Date.now,
-    required: true
+    default: null,
+    required: false
   },
   total_quiz_items: {
     type: Number,

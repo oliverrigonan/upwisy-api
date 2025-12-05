@@ -13,6 +13,7 @@ const EnrollmentQuizItemsSchema = new mongoose.Schema({
   },
   user_answer: {
     type: String,
+    default: null,
     required: false
   },
   is_correct: {
@@ -21,6 +22,7 @@ const EnrollmentQuizItemsSchema = new mongoose.Schema({
   },
   answered_at: {
     type: Date,
+    default: null,
     required: false
   }
 });

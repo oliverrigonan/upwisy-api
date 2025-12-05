@@ -1,27 +1,141 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, HttpException, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+
+import type { Request } from 'express';
 
 import { AuthGuard } from './../auth/auth.http-guard';
 
 import { EnrollmentsService } from './enrollments.service';
+import { EnrollmentLessonsService } from './../enrollment-lessons/enrollment-lessons.service';
+import { EnrollmentLessonSectionsService } from './..//enrollment-lesson-sections/enrollment-lesson-sections.service';
+import { EnrollmentQuizzesService } from './..//enrollment-quizzes/enrollment-quizzes.service';
+import { EnrollmentQuizItemsService } from './.././enrollment-quiz-items/enrollment-quiz-items.service';
+import { CoursesService } from './../courses/courses.service';
+import { LessonsService } from './../lessons/lessons.service';
+import { LessonSectionsService, LessonSectionDocument } from './../lesson-sections/lesson-sections.service';
+import { QuizzesService } from './../quizzes/quizzes.service';
+import { QuizItemsService, QuizItemDocument } from './../quiz-items/quiz-items.service';
 
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
-import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
+import { EnrollUserDto } from './dto/enroll-user.dto';
 
 @ApiTags('Enrollments')
 @Controller('api/enrollments')
 export class EnrollmentsController {
 
   constructor(
-    private readonly enrollmentsService: EnrollmentsService
+    private readonly enrollmentsService: EnrollmentsService,
+    private readonly enrollmentLessonsService: EnrollmentLessonsService,
+    private readonly enrollmentLessonSectionsService: EnrollmentLessonSectionsService,
+    private readonly enrollmentQuizzesService: EnrollmentQuizzesService,
+    private readonly enrollmentQuizItemsService: EnrollmentQuizItemsService,
+    private readonly coursesService: CoursesService,
+    private readonly lessonsService: LessonsService,
+    private readonly lessonSectionsService: LessonSectionsService,
+    private readonly quizzesService: QuizzesService,
+    private readonly quizItemsService: QuizItemsService,
   ) { }
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Post()
-  async create(@Body() createEnrollmentDto: CreateEnrollmentDto) {
+  @Post('enroll-user')
+  async enrollUser(
+    @Body() enrollUserDto: EnrollUserDto,
+    @Req() req: Request,
+  ) {
     try {
-      return await this.enrollmentsService.create(createEnrollmentDto);
+      const course = await this.coursesService.findOne(enrollUserDto.course_id);
+      if (!course) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Course not found',
+            error: `The course with ID ${enrollUserDto.course_id} does not exist.`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const lessons = await this.lessonsService.findByCourseId(enrollUserDto.course_id);
+      const lessonSections: LessonSectionDocument[] = [];
+      if (lessons.length > 0) {
+        for (const lesson of lessons) {
+          const sections = await this.lessonSectionsService.findByLessonId(lesson._id.toString());
+          lessonSections.push(...sections);
+        }
+      }
+
+      const quizzes = await this.quizzesService.findByCourseId(enrollUserDto.course_id);
+      const quizItems: QuizItemDocument[] = [];
+      if (quizzes.length > 0) {
+        for (const quiz of quizzes) {
+          const items = await this.quizItemsService.findByQuizId(quiz._id.toString());
+          quizItems.push(...items);
+        }
+      }
+
+      const currentUser = req.user as any;
+      const userId = currentUser?.userId;
+
+      const createEnrollmentDto: CreateEnrollmentDto = {
+        user_id: userId,
+        course_id: enrollUserDto.course_id,
+        enrolled_date: new Date(),
+        is_anonymous: enrollUserDto.is_anonymous || false,
+        display_name: enrollUserDto.display_name || '',
+        session_id: null,
+        total_lessons: course.total_lessons || 0,
+        lessons_completed: 0,
+        quizzes_taken: 0,
+        status: 'enrolled',
+      };
+
+      const createdEnrollment = await this.enrollmentsService.create(createEnrollmentDto);
+
+      for (const lesson of lessons) {
+        await this.enrollmentLessonsService.create({
+          enrollment_id: createdEnrollment.id,
+          lesson_id: lesson._id.toString(),
+          total_lesson_sections: lesson.total_lesson_sections,
+          lesson_sections_completed: 0,
+          status: 'not_started',
+          completed_at: null,
+        });
+      }
+
+      for (const section of lessonSections) {
+        await this.enrollmentLessonSectionsService.create({
+          enrollment_lesson_id: section.lesson_id,
+          lesson_section_id: section._id.toString(),
+          status: 'not_started',
+          started_at: null,
+          completed_at: null,
+        });
+      }
+
+      for (const quiz of quizzes) {
+        await this.enrollmentQuizzesService.create({
+          enrollment_id: createdEnrollment._id.toString(),
+          quiz_id: quiz._id.toString(),
+          date_taken: null,
+          total_quiz_items: quiz.total_items,
+          score: 0,
+          comments: '',
+          is_submitted: false,
+        });
+      }
+
+      for (const item of quizItems) {
+        await this.enrollmentQuizItemsService.create({
+          enrollment_quiz_id: item.quiz_id,
+          quiz_item_id: item.id,
+          user_answer: '',
+          is_correct: false,
+          answered_at: null,
+        });
+      }
+
+      return createdEnrollment;
     } catch (error) {
       throw new HttpException(
         {
@@ -36,9 +150,57 @@ export class EnrollmentsController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Get()
-  async findAll() {
-    return await this.enrollmentsService.findAll();
+  @Get('by-current-user')
+  async findByCurrentUser(@Req() req: Request) {
+    const currentUser = req.user as any;
+    const userId = currentUser?.userId;
+
+    const enrollments = await this.enrollmentsService.findByUserId(userId);
+    if (!enrollments || enrollments.length === 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No enrollments found for the specified user ID',
+          error: `No enrollments found with user ID ${userId}.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return enrollments;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Get('by-current-user-and-course-id/:course_id')
+  async findByCurrentUserAndCourse(
+    @Param('course_id') course_id: string,
+    @Req() req: Request,
+  ) {
+    const currentUser = req.user as any;
+    const userId = currentUser?.userId;
+
+    const enrollments = await this.enrollmentsService.findByUserIdAndCourseId(userId, course_id);
+    return enrollments;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Get('by-course-id/:course_id')
+  async findByCourseId(@Param('course_id') course_id: string) {
+    const enrollments = await this.enrollmentsService.findByCourseId(course_id);
+    if (!enrollments || enrollments.length === 0) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'No enrollments found for the specified course ID',
+          error: `No enrollments found with course ID ${course_id}.`,
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return enrollments;
   }
 
   @ApiBearerAuth()
@@ -77,65 +239,5 @@ export class EnrollmentsController {
     }
 
     return enrollment;
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateEnrollmentDto: UpdateEnrollmentDto) {
-    try {
-      const enrollment = await this.enrollmentsService.findOne(id);
-      if (!enrollment) {
-        throw new HttpException(
-          {
-            statusCode: HttpStatus.NOT_FOUND,
-            message: 'Enrollment not found',
-            error: `The enrollment with ID ${id} does not exist.`,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      return this.enrollmentsService.update(id, updateEnrollmentDto);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to update enrollment',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    try {
-      const enrollment = await this.enrollmentsService.findOne(id);
-      if (!enrollment) {
-        throw new HttpException(
-          {
-            statusCode: HttpStatus.NOT_FOUND,
-            message: 'Enrollment not found',
-            error: `The enrollment with ID ${id} does not exist.`,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      return this.enrollmentsService.remove(id);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to remove enrollment',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
   }
 }

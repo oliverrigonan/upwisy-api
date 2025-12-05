@@ -4,5 +4,5 @@ export class EnrollmentLesson {
   total_lesson_sections: number;
   lesson_sections_completed: number;
   status: string;
-  completed_at: Date;
+  completed_at: Date | null;
 }

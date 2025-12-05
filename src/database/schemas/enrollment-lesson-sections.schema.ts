@@ -19,10 +19,12 @@ const EnrollmentLessonSectionsSchema = new mongoose.Schema({
   },
   started_at: {
     type: Date,
+    default: null,
     required: false
   },
   completed_at: {
     type: Date,
+    default: null,
     required: false
   }
 });
