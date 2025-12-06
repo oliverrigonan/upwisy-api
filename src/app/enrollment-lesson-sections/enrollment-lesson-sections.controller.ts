@@ -1,19 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthGuard } from './../auth/auth.http-guard';
 
 import { EnrollmentLessonSectionsService } from './enrollment-lesson-sections.service';
+import { EnrollmentLessonsService } from '../enrollment-lessons/enrollment-lessons.service';
 
 import { CreateEnrollmentLessonSectionDto } from './dto/create-enrollment-lesson-section.dto';
 import { UpdateEnrollmentLessonSectionDto } from './dto/update-enrollment-lesson-section.dto';
+import { UpdateEnrollmentLessonDto } from '../enrollment-lessons/dto/update-enrollment-lesson.dto';
 
 @ApiTags('Enrollment Lesson Sections')
 @Controller('api/enrollment-lesson-sections')
 export class EnrollmentLessonSectionsController {
 
   constructor(
-    private readonly enrollmentLessonSectionsService: EnrollmentLessonSectionsService
+    private readonly enrollmentLessonSectionsService: EnrollmentLessonSectionsService,
+    private readonly enrollmentLessonsService: EnrollmentLessonsService,
   ) { }
 
   @ApiBearerAuth()
@@ -59,8 +62,8 @@ export class EnrollmentLessonSectionsController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateEnrollmentLessonSectionDto: UpdateEnrollmentLessonSectionDto) {
+  @Patch('complete/:id')
+  async complete(@Param('id') id: string) {
     try {
       const enrollmentLessonSection = await this.enrollmentLessonSectionsService.findOne(id);
       if (!enrollmentLessonSection) {
@@ -74,42 +77,46 @@ export class EnrollmentLessonSectionsController {
         );
       }
 
-      return this.enrollmentLessonSectionsService.update(id, updateEnrollmentLessonSectionDto);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to update enrollment lesson section',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
+      const completeEnrollmentLessonSection: Partial<UpdateEnrollmentLessonSectionDto> = {
+        status: 'completed',
+        completed_at: new Date(),
+      };
 
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    try {
-      const enrollmentLessonSection = await this.enrollmentLessonSectionsService.findOne(id);
-      if (!enrollmentLessonSection) {
+      const completedEnrollmentLessonSection = this.enrollmentLessonSectionsService.update(id, completeEnrollmentLessonSection);
+
+      const enrollmentLesson = await this.enrollmentLessonsService.findOne(enrollmentLessonSection.enrollment_lesson_id);
+      if (!enrollmentLesson) {
         throw new HttpException(
           {
             statusCode: HttpStatus.NOT_FOUND,
-            message: 'Enrollment lesson-sections not found',
-            error: `The enrollment lesson-sections with ID ${id} does not exist.`,
+            message: 'Enrollment lesson not found',
+            error: `The enrollment lesson with ID ${enrollmentLessonSection.enrollment_lesson_id} does not exist.`,
           },
           HttpStatus.NOT_FOUND,
         );
       }
 
-      return this.enrollmentLessonSectionsService.remove(id);
+      const completedEnrollmentLessonSections = await this.enrollmentLessonSectionsService.findByEnrollmentLessonIdAndStatus(enrollmentLessonSection.enrollment_lesson_id, 'completed');
+
+      const updatedEnrollmentLesson: Partial<UpdateEnrollmentLessonDto> = {
+        lesson_sections_completed: completedEnrollmentLessonSections.length,
+      };
+      await this.enrollmentLessonsService.update(enrollmentLessonSection.enrollment_lesson_id, updatedEnrollmentLesson);
+
+      if (completedEnrollmentLessonSections.length === enrollmentLesson.total_lesson_sections) {
+        const completedEnrollmentLesson: Partial<UpdateEnrollmentLessonDto> = {
+          status: 'completed',
+          completed_at: new Date(),
+        };
+        await this.enrollmentLessonsService.update(enrollmentLessonSection.enrollment_lesson_id, completedEnrollmentLesson);
+      }
+
+      return completedEnrollmentLessonSection;
     } catch (error) {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to remove enrollment lesson section',
+          message: 'Failed to update enrollment lesson section',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

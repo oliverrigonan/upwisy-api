@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthGuard } from './../auth/auth.http-guard';
@@ -59,8 +59,8 @@ export class EnrollmentLessonsController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateEnrollmentLessonDto: UpdateEnrollmentLessonDto) {
+  @Patch('start/:id')
+  async start(@Param('id') id: string) {
     try {
       const enrollmentLesson = await this.enrollmentLessonsService.findOne(id);
       if (!enrollmentLesson) {
@@ -74,42 +74,16 @@ export class EnrollmentLessonsController {
         );
       }
 
-      return this.enrollmentLessonsService.update(id, updateEnrollmentLessonDto);
+      const startSession: Partial<UpdateEnrollmentLessonDto> = {
+        status: 'in_progress',
+      };
+
+      return this.enrollmentLessonsService.update(id, startSession);
     } catch (error) {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to update enrollment lesson',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    try {
-      const enrollmentLesson = await this.enrollmentLessonsService.findOne(id);
-      if (!enrollmentLesson) {
-        throw new HttpException(
-          {
-            statusCode: HttpStatus.NOT_FOUND,
-            message: 'Enrollment lesson not found',
-            error: `The enrollment lesson with ID ${id} does not exist.`,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      return this.enrollmentLessonsService.remove(id);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to remove enrollment lesson',
+          message: 'Failed to update learning plan',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
