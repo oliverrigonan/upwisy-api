@@ -92,29 +92,35 @@ export class EnrollmentsController {
 
       const createdEnrollment = await this.enrollmentsService.create(createEnrollmentDto);
 
-      for (const lesson of lessons) {
-        await this.enrollmentLessonsService.create({
+      const createdEnrollmentLessons = await this.enrollmentLessonsService.createMany(
+        lessons.map(lesson => ({
           enrollment_id: createdEnrollment.id,
           lesson_id: lesson._id.toString(),
           total_lesson_sections: lesson.total_lesson_sections,
           lesson_sections_completed: 0,
           status: 'not_started',
           completed_at: null,
-        });
-      }
+        })),
+      );
 
-      for (const section of lessonSections) {
-        await this.enrollmentLessonSectionsService.create({
-          enrollment_lesson_id: section.lesson_id,
-          lesson_section_id: section._id.toString(),
-          status: 'not_started',
-          started_at: null,
-          completed_at: null,
-        });
-      }
+      await this.enrollmentLessonSectionsService.createMany(
+        createdEnrollmentLessons.map(enrollmentLesson => {
+          const sections = lessonSections.filter(
+            section => section.lesson_id.toString() === enrollmentLesson.lesson_id.toString(),
+          );
 
-      for (const quiz of quizzes) {
-        await this.enrollmentQuizzesService.create({
+          return sections.map(section => ({
+            enrollment_lesson_id: enrollmentLesson.id.toString(),
+            lesson_section_id: section.id.toString(),
+            status: 'not_started',
+            started_at: null,
+            completed_at: null,
+          }));
+        }).flat(),
+      );
+
+      const createdEnrollmentQuizzes = await this.enrollmentQuizzesService.createMany(
+        quizzes.map(quiz => ({
           enrollment_id: createdEnrollment._id.toString(),
           quiz_id: quiz._id.toString(),
           date_taken: null,
@@ -122,18 +128,24 @@ export class EnrollmentsController {
           score: 0,
           comments: '',
           is_submitted: false,
-        });
-      }
+        })),
+      );
 
-      for (const item of quizItems) {
-        await this.enrollmentQuizItemsService.create({
-          enrollment_quiz_id: item.quiz_id,
-          quiz_item_id: item.id,
-          user_answer: '',
-          is_correct: false,
-          answered_at: null,
-        });
-      }
+      await this.enrollmentQuizItemsService.createMany(
+        createdEnrollmentQuizzes.map(enrollmentQuiz => {
+          const items = quizItems.filter(
+            item => item.quiz_id.toString() === enrollmentQuiz.quiz_id.toString(),
+          );
+
+          return items.map(item => ({
+            enrollment_quiz_id: enrollmentQuiz.id.toString(),
+            quiz_item_id: item._id.toString(),
+            user_answer: '',
+            is_correct: false,
+            answered_at: null,
+          }));
+        }).flat()
+      )
 
       return createdEnrollment;
     } catch (error) {
@@ -156,17 +168,6 @@ export class EnrollmentsController {
     const userId = currentUser?.userId;
 
     const enrollments = await this.enrollmentsService.findByUserId(userId);
-    if (!enrollments || enrollments.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No enrollments found for the specified user ID',
-          error: `No enrollments found with user ID ${userId}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollments;
   }
 
@@ -189,17 +190,6 @@ export class EnrollmentsController {
   @Get('by-course-id/:course_id')
   async findByCourseId(@Param('course_id') course_id: string) {
     const enrollments = await this.enrollmentsService.findByCourseId(course_id);
-    if (!enrollments || enrollments.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No enrollments found for the specified course ID',
-          error: `No enrollments found with course ID ${course_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollments;
   }
 
@@ -208,17 +198,6 @@ export class EnrollmentsController {
   @Get('by-user-id/:user_id')
   async findByUserId(@Param('user_id') user_id: string) {
     const enrollments = await this.enrollmentsService.findByUserId(user_id);
-    if (!enrollments || enrollments.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No enrollments found for the specified user ID',
-          error: `No enrollments found with user ID ${user_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollments;
   }
 
@@ -227,17 +206,6 @@ export class EnrollmentsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const enrollment = await this.enrollmentsService.findOne(id);
-    if (!enrollment) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'Enrollment not found',
-          error: `The enrollment with ID ${id} does not exist.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollment;
   }
 }

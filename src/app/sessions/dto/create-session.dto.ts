@@ -8,13 +8,10 @@ export class CreateSessionDto {
   enrollment_id: string;
 
   @ApiProperty()
-  type: string;
+  start_time: string | null;
 
   @ApiProperty()
-  start_time: string;
-
-  @ApiProperty()
-  end_time: string;
+  end_time: string | null;
 
   @ApiProperty()
   duration_seconds: number;

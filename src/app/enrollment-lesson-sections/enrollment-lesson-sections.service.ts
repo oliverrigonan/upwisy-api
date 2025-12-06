@@ -29,18 +29,40 @@ export class EnrollmentLessonSectionsService {
     return await createdEnrollmentLessonSection.save();
   }
 
+  async createMany(createEnrollmentLessonSectionDtos: CreateEnrollmentLessonSectionDto[]) {
+    const newEnrollmentLessonSections: EnrollmentLessonSection[] = createEnrollmentLessonSectionDtos.map(createEnrollmentLessonSectionDto => ({
+      enrollment_lesson_id: createEnrollmentLessonSectionDto.enrollment_lesson_id,
+      lesson_section_id: createEnrollmentLessonSectionDto.lesson_section_id,
+      status: createEnrollmentLessonSectionDto.status,
+      started_at: createEnrollmentLessonSectionDto.started_at,
+      completed_at: createEnrollmentLessonSectionDto.completed_at,
+    }));
+
+    const createdEnrollmentLessonSections = await this.enrollmentLessonSectionsModel.insertMany(newEnrollmentLessonSections);
+    return createdEnrollmentLessonSections;
+  }
+
   async findAll() {
-    return await this.enrollmentLessonSectionsModel.find().exec();
+    return await this.enrollmentLessonSectionsModel
+      .find()
+      .populate('lesson_section')
+      .exec();
   }
 
   async findByEnrollmentLessonId(enrollment_lesson_id: string) {
-    return await this.enrollmentLessonSectionsModel.find({
-      enrollment_lesson_id: enrollment_lesson_id,
-    }).exec();
+    return await this.enrollmentLessonSectionsModel
+      .find({
+        enrollment_lesson_id: enrollment_lesson_id,
+      })
+      .populate('lesson_section')
+      .exec();
   }
 
   async findOne(id: string) {
-    return await this.enrollmentLessonSectionsModel.findById(id).exec();
+    return await this.enrollmentLessonSectionsModel
+      .findById(id)
+      .populate('lesson_section')
+      .exec();
   }
 
   update(id: string, updateEnrollmentLessonSectionDto: UpdateEnrollmentLessonSectionDto) {

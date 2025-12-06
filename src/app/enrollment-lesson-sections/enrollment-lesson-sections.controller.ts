@@ -46,17 +46,6 @@ export class EnrollmentLessonSectionsController {
   @Get('by-enrollment-lesson-id/:enrollment_lesson_id')
   async findByEnrollmentLessonId(@Param('enrollment_lesson_id') enrollment_lesson_id: string) {
     const enrollmentLessonSections = await this.enrollmentLessonSectionsService.findByEnrollmentLessonId(enrollment_lesson_id);
-    if (!enrollmentLessonSections || enrollmentLessonSections.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No enrollment lesson sections found for the specified enrollment lesson ID',
-          error: `No enrollment lesson sections found with enrollment lesson ID ${enrollment_lesson_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollmentLessonSections;
   }
 
@@ -65,17 +54,6 @@ export class EnrollmentLessonSectionsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const enrollmentLessonSection = await this.enrollmentLessonSectionsService.findOne(id);
-    if (!enrollmentLessonSection) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'Enrollment lesson section not found',
-          error: `The enrollment lesson section with ID ${id} does not exist.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollmentLessonSection;
   }
 

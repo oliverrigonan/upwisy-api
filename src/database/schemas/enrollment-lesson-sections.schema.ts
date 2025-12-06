@@ -3,12 +3,12 @@ import * as mongoose from 'mongoose';
 const EnrollmentLessonSectionsSchema = new mongoose.Schema({
   enrollment_lesson_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'EnrollmentLessons',
+    ref: 'enrollment_essons',
     required: true
   },
   lesson_section_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'LessonSections',
+    ref: 'lesson_sections',
     required: false
   },
   status: {
@@ -27,6 +27,29 @@ const EnrollmentLessonSectionsSchema = new mongoose.Schema({
     default: null,
     required: false
   }
+});
+
+EnrollmentLessonSectionsSchema.virtual('lesson_section', {
+  ref: 'lesson_sections',
+  localField: 'lesson_section_id',
+  foreignField: '_id',
+  justOne: true,
+});
+
+EnrollmentLessonSectionsSchema.set('toObject', { virtuals: true });
+EnrollmentLessonSectionsSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    return {
+      _id: ret._id,
+      enrollment_lesson_id: ret.enrollment_lesson_id,
+      lesson_section_id: ret.lesson_section_id,
+      lesson_section: (ret as any).lesson_section,
+      status: ret.status,
+      started_at: ret.started_at,
+      completed_at: ret.completed_at,
+    };
+  },
 });
 
 export const EnrollmentLessonSectionsModelProvider = {

@@ -46,17 +46,6 @@ export class EnrollmentLessonsController {
   @Get('by-enrollment-id/:enrollment_id')
   async findByEnrollmentId(@Param('enrollment_id') enrollment_id: string) {
     const enrollmentLessons = await this.enrollmentLessonsService.findByEnrollmentId(enrollment_id);
-    if (!enrollmentLessons || enrollmentLessons.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No enrollment lessons found for the specified enrollment ID',
-          error: `No enrollment lessons found with enrollment ID ${enrollment_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollmentLessons;
   }
 
@@ -65,17 +54,6 @@ export class EnrollmentLessonsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const enrollmentLesson = await this.enrollmentLessonsService.findOne(id);
-    if (!enrollmentLesson) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'Enrollment lesson not found',
-          error: `The enrollment lesson with ID ${id} does not exist.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollmentLesson;
   }
 

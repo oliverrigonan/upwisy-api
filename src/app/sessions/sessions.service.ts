@@ -20,7 +20,6 @@ export class SessionsService {
     const newSession: Session = {
       user_id: createSessionDto.user_id,
       enrollment_id: createSessionDto.enrollment_id,
-      type: createSessionDto.type,
       start_time: createSessionDto.start_time,
       end_time: createSessionDto.end_time,
       duration_seconds: createSessionDto.duration_seconds,
@@ -33,17 +32,29 @@ export class SessionsService {
   }
 
   async findAll() {
-    return await this.SessionsModel.find().exec();
+    return await this.SessionsModel
+      .find()
+      .populate('user', 'full_name email photo_url created_at updated_at')
+      .populate('enrollment')
+      .exec();
   }
 
-  async findById(_id: string) {
-    return await this.SessionsModel.find({
-      _id: _id,
-    }).exec();
+  async findByEnrollmentId(enrollment_id: string) {
+    return await this.SessionsModel
+      .find({
+        enrollment_id: enrollment_id,
+      })
+      .populate('user', 'full_name email photo_url created_at updated_at')
+      .populate('enrollment')
+      .exec();
   }
 
   async findOne(id: string) {
-    return await this.SessionsModel.findById(id).exec();
+    return await this.SessionsModel
+      .findById(id)
+      .populate('user', 'full_name email photo_url created_at updated_at')
+      .populate('enrollment')
+      .exec();
   }
 
   update(id: string, updateSessionDto: UpdateSessionDto) {

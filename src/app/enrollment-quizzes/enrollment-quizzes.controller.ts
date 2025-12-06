@@ -46,17 +46,6 @@ export class EnrollmentQuizzesController {
   @Get('by-enrollment-id/:enrollment_id')
   async findByEnrollmentId(@Param('enrollment_id') enrollment_id: string) {
     const enrollmentQuizzes = await this.enrollmentQuizzesService.findByEnrollmentId(enrollment_id);
-    if (!enrollmentQuizzes || enrollmentQuizzes.length === 0) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'No enrollment quizzes found for the specified enrollment ID',
-          error: `No enrollment quizzes found with enrollment ID ${enrollment_id}.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollmentQuizzes;
   }
 
@@ -65,17 +54,6 @@ export class EnrollmentQuizzesController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const enrollmentQuiz = await this.enrollmentQuizzesService.findOne(id);
-    if (!enrollmentQuiz) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.NOT_FOUND,
-          message: 'Enrollment quiz not found',
-          error: `The enrollment quiz with ID ${id} does not exist.`,
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
     return enrollmentQuiz;
   }
 
