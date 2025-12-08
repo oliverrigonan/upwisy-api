@@ -24,6 +24,7 @@ export class CoursesService {
       difficulty: createCourseDto.difficulty,
       type: createCourseDto.type,
       is_mandatory: createCourseDto.is_mandatory,
+      allow_anonymous_users: createCourseDto.allow_anonymous_users,
       material_file_id: createCourseDto.material_file_id,
       visibility: createCourseDto.visibility,
       total_lessons: createCourseDto.total_lessons,

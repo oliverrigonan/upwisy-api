@@ -36,6 +36,11 @@ const CoursesSchema = new mongoose.Schema({
     default: null,
     required: false
   },
+  allow_anonymous_users: {
+    type: Boolean,
+    default: false,
+    required: true
+  },
   visibility: {
     type: String,
     enum: ['private', 'public'],

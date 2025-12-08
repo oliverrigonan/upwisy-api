@@ -23,14 +23,17 @@ export type GenerationType =
 export class GenerateCourseDto {
   type!: GenerationType;
   difficulty!: GenerationDifficulty;
+  allow_anonymous_users: boolean;
 }
 
 export class GenerateFullCourseDto {
   source!: GenerationSource;
   difficulty!: GenerationDifficulty;
+  allow_anonymous_users: boolean;
 }
 
 export class GenerateQuizOnlyCourseDto {
   file_id!: string;
   difficulty!: GenerationDifficulty;
+  allow_anonymous_users: boolean;
 }

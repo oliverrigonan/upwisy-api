@@ -57,6 +57,18 @@ export class EnrollmentsController {
       }
 
       const lessons = await this.lessonsService.findByCourseId(enrollUserDto.course_id);
+
+      if (course.type === 'full_course' && lessons.length === 0) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Cannot enroll user',
+            error: `The course with ID ${enrollUserDto.course_id} has no lessons.`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const lessonSections: LessonSectionDocument[] = [];
       if (lessons.length > 0) {
         for (const lesson of lessons) {
@@ -66,6 +78,18 @@ export class EnrollmentsController {
       }
 
       const quizzes = await this.quizzesService.findByCourseId(enrollUserDto.course_id);
+
+      if (course.type === 'quiz_only_course' && quizzes.length === 0) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'Cannot enroll user',
+            error: `The course with ID ${enrollUserDto.course_id} has no quizzes.`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const quizItems: QuizItemDocument[] = [];
       if (quizzes.length > 0) {
         for (const quiz of quizzes) {

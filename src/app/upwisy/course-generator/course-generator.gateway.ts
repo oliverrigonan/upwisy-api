@@ -150,14 +150,16 @@ export class CourseGeneratorGateway {
       if (data.type.value === "full_course") {
         await this.generateFullCourse(socket, {
           source: data.type.params.source,
-          difficulty: data.difficulty
+          difficulty: data.difficulty,
+          allow_anonymous_users: data.allow_anonymous_users,
         });
       }
 
       if (data.type.value === "quiz_only_course") {
         await this.generateQuizOnlyCourse(socket, {
           file_id: data.type.params.file_id,
-          difficulty: data.difficulty
+          difficulty: data.difficulty,
+          allow_anonymous_users: data.allow_anonymous_users,
         });
       }
     } catch (error) {
@@ -212,6 +214,7 @@ export class CourseGeneratorGateway {
             difficulty: params.difficulty,
             type: 'full_course',
             is_mandatory: false,
+            allow_anonymous_users: params.allow_anonymous_users,
             material_file_id: null,
             visibility: 'private',
             status: 'pending',
@@ -411,6 +414,7 @@ export class CourseGeneratorGateway {
             difficulty: params.difficulty,
             type: 'full_course',
             is_mandatory: false,
+            allow_anonymous_users: params.allow_anonymous_users,
             material_file_id: params.source.file_id,
             visibility: 'private',
             status: 'pending',
@@ -612,6 +616,7 @@ export class CourseGeneratorGateway {
         difficulty: params.difficulty,
         type: 'quiz_only_course',
         is_mandatory: false,
+        allow_anonymous_users: params.allow_anonymous_users,
         material_file_id: null,
         visibility: 'private',
         status: 'pending',

@@ -5,6 +5,7 @@ export class Course {
   difficulty: string;
   type: string;
   is_mandatory: boolean;
+  allow_anonymous_users: boolean;
   material_file_id: string | null;
   visibility: string;
   total_lessons: number;

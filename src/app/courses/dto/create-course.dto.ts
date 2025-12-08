@@ -20,6 +20,9 @@ export class CreateCourseDto {
   is_mandatory: boolean;
 
   @ApiProperty()
+  allow_anonymous_users: boolean;
+
+  @ApiProperty()
   material_file_id: string | null;
 
   @ApiProperty()
