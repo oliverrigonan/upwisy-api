@@ -1,14 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthGuard } from './../auth/auth.http-guard';
 
 import { EnrollmentLessonSectionsService } from './enrollment-lesson-sections.service';
 import { EnrollmentLessonsService } from '../enrollment-lessons/enrollment-lessons.service';
-
-import { CreateEnrollmentLessonSectionDto } from './dto/create-enrollment-lesson-section.dto';
-import { UpdateEnrollmentLessonSectionDto } from './dto/update-enrollment-lesson-section.dto';
-import { UpdateEnrollmentLessonDto } from '../enrollment-lessons/dto/update-enrollment-lesson.dto';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 
 @ApiTags('Enrollment Lesson Sections')
 @Controller('api/enrollment-lesson-sections')
@@ -17,32 +14,8 @@ export class EnrollmentLessonSectionsController {
   constructor(
     private readonly enrollmentLessonSectionsService: EnrollmentLessonSectionsService,
     private readonly enrollmentLessonsService: EnrollmentLessonsService,
+    private readonly enrollmentsService: EnrollmentsService,
   ) { }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Post()
-  async create(@Body() createEnrollmentLessonSectionDto: CreateEnrollmentLessonSectionDto) {
-    try {
-      return await this.enrollmentLessonSectionsService.create(createEnrollmentLessonSectionDto);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to create enrollment lesson section',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Get()
-  async findAll() {
-    return await this.enrollmentLessonSectionsService.findAll();
-  }
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
@@ -77,13 +50,6 @@ export class EnrollmentLessonSectionsController {
         );
       }
 
-      const completeEnrollmentLessonSection: Partial<UpdateEnrollmentLessonSectionDto> = {
-        status: 'completed',
-        completed_at: new Date(),
-      };
-
-      const completedEnrollmentLessonSection = this.enrollmentLessonSectionsService.update(id, completeEnrollmentLessonSection);
-
       const enrollmentLesson = await this.enrollmentLessonsService.findOne(enrollmentLessonSection.enrollment_lesson_id);
       if (!enrollmentLesson) {
         throw new HttpException(
@@ -96,19 +62,42 @@ export class EnrollmentLessonSectionsController {
         );
       }
 
-      const completedEnrollmentLessonSections = await this.enrollmentLessonSectionsService.findByEnrollmentLessonIdAndStatus(enrollmentLessonSection.enrollment_lesson_id, 'completed');
+      const enrollment = await this.enrollmentsService.findOne(enrollmentLesson.enrollment_id);
+      if (!enrollment) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Enrollment not found',
+            error: `The enrollment with ID ${enrollmentLesson.enrollment_id} does not exist.`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
 
-      const updatedEnrollmentLesson: Partial<UpdateEnrollmentLessonDto> = {
+      const completedEnrollmentLessonSection = await this.enrollmentLessonSectionsService.update(id, {
+        status: 'completed',
+        completed_at: new Date(),
+      });
+
+      const completedEnrollmentLessonSections = await this.enrollmentLessonSectionsService.findByEnrollmentLessonIdAndStatus(enrollmentLessonSection.enrollment_lesson_id, 'completed');
+      await this.enrollmentLessonsService.update(enrollmentLessonSection.enrollment_lesson_id, {
         lesson_sections_completed: completedEnrollmentLessonSections.length,
-      };
-      await this.enrollmentLessonsService.update(enrollmentLessonSection.enrollment_lesson_id, updatedEnrollmentLesson);
+      });
 
       if (completedEnrollmentLessonSections.length === enrollmentLesson.total_lesson_sections) {
-        const completedEnrollmentLesson: Partial<UpdateEnrollmentLessonDto> = {
+        await this.enrollmentLessonsService.update(enrollmentLessonSection.enrollment_lesson_id, {
           status: 'completed',
           completed_at: new Date(),
-        };
-        await this.enrollmentLessonsService.update(enrollmentLessonSection.enrollment_lesson_id, completedEnrollmentLesson);
+        });
+      }
+
+      const enrollmentLessons = await this.enrollmentLessonsService.findByEnrollmentId(enrollmentLesson.enrollment_id);
+      const completedEnrollmentLessons = enrollmentLessons.filter(el => el.status === 'completed');
+
+      if (completedEnrollmentLessons.length === enrollmentLessons.length) {
+        await this.enrollmentsService.update(enrollmentLesson.enrollment_id, {
+          status: 'completed',
+        });
       }
 
       return completedEnrollmentLessonSection;

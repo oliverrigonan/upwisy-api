@@ -1,45 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthGuard } from './../auth/auth.http-guard';
 
 import { EnrollmentLessonsService } from './enrollment-lessons.service';
-
-import { CreateEnrollmentLessonDto } from './dto/create-enrollment-lesson.dto';
-import { UpdateEnrollmentLessonDto } from './dto/update-enrollment-lesson.dto';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
 
 @ApiTags('Enrollment Lessons')
 @Controller('api/enrollment-lessons')
 export class EnrollmentLessonsController {
 
   constructor(
-    private readonly enrollmentLessonsService: EnrollmentLessonsService
+    private readonly enrollmentLessonsService: EnrollmentLessonsService,
+    private readonly enrollmentsService: EnrollmentsService,
   ) { }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Post()
-  async create(@Body() createEnrollmentLessonDto: CreateEnrollmentLessonDto) {
-    try {
-      return await this.enrollmentLessonsService.create(createEnrollmentLessonDto);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to create enrollment lesson',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Get()
-  async findAll() {
-    return await this.enrollmentLessonsService.findAll();
-  }
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
@@ -74,11 +48,27 @@ export class EnrollmentLessonsController {
         );
       }
 
-      const startSession: Partial<UpdateEnrollmentLessonDto> = {
-        status: 'in_progress',
-      };
+      const enrollment = await this.enrollmentsService.findOne(enrollmentLesson.enrollment_id);
+      if (!enrollment) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Enrollment not found',
+            error: `The enrollment with ID ${enrollmentLesson.enrollment_id} does not exist.`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
 
-      return this.enrollmentLessonsService.update(id, startSession);
+      const startedSession = await this.enrollmentLessonsService.update(id, {
+        status: 'in_progress',
+      });
+
+      await this.enrollmentsService.update(enrollmentLesson.enrollment_id, {
+        status: 'active',
+      });
+
+      return startedSession;
     } catch (error) {
       throw new HttpException(
         {

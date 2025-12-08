@@ -75,7 +75,7 @@ export class EnrollmentLessonSectionsService {
       .exec();
   }
 
-  update(id: string, updateEnrollmentLessonSectionDto: UpdateEnrollmentLessonSectionDto) {
+  async update(id: string, updateEnrollmentLessonSectionDto: UpdateEnrollmentLessonSectionDto) {
     const updatedEnrollmentLessonSection: Partial<EnrollmentLessonSection> = {};
 
     for (const key in updateEnrollmentLessonSectionDto) {
@@ -84,10 +84,10 @@ export class EnrollmentLessonSectionsService {
       }
     }
 
-    return this.enrollmentLessonSectionsModel.findByIdAndUpdate(id, updatedEnrollmentLessonSection, { new: true }).exec();
+    return await this.enrollmentLessonSectionsModel.findByIdAndUpdate(id, updatedEnrollmentLessonSection, { new: true }).exec();
   }
 
-  remove(id: string) {
-    return this.enrollmentLessonSectionsModel.findByIdAndDelete(id).exec();
+  async remove(id: string) {
+    return await this.enrollmentLessonSectionsModel.findByIdAndDelete(id).exec();
   }
 }
