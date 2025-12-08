@@ -19,7 +19,6 @@ export class FilesService {
   async create(createFileDto: CreateFileDto) {
     const newFile: File = {
       user_id: createFileDto.user_id,
-      course_id: createFileDto.course_id,
       file_url: createFileDto.file_url,
       created_at: new Date(),
       updated_at: new Date(),

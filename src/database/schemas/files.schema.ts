@@ -6,11 +6,6 @@ const FilesSchema = new mongoose.Schema({
     ref: 'Users',
     required: true
   },
-  course_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Courses',
-    required: true
-  },
   file_url: {
     type: String,
     required: true

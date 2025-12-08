@@ -5,8 +5,5 @@ export class CreateFileDto {
   user_id: string;
 
   @ApiProperty()
-  course_id: string;
-
-  @ApiProperty()
   file_url: string;
 }

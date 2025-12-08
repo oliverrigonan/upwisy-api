@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Param, Delete, HttpException, HttpStatus, UseGuards,
+  Controller, Get, Post, Param, HttpException, HttpStatus, UseGuards,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
@@ -31,13 +31,6 @@ export class FilesController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Get()
-  async findAll() {
-    return await this.filesService.findAll();
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
   @Get('by-user-id/:user_id')
   async findByUserId(@Param('user_id') user_id: string) {
     const files = await this.filesService.findByUserId(user_id);
@@ -65,37 +58,7 @@ export class FilesController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    try {
-      const file = await this.filesService.findOne(id);
-      if (!file) {
-        throw new HttpException(
-          {
-            statusCode: HttpStatus.NOT_FOUND,
-            message: 'File not found',
-            error: `The file with ID ${id} does not exist.`,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      return this.filesService.remove(id);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to remove file',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Post('upload/:course_id')
+  @Post('upload')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -128,8 +91,7 @@ export class FilesController {
   )
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
-    @Param('course_id') course_id: string,
+    @Req() req: Request
   ) {
     try {
       if (!file) throw new BadRequestException('No file uploaded');
@@ -157,7 +119,6 @@ export class FilesController {
 
       const newFile: CreateFileDto = {
         user_id: userId,
-        course_id: course_id,
         file_url: filePath,
       };
 
