@@ -24,7 +24,7 @@ import { CreateLessonSectionDto } from './../../lesson-sections/dto/create-lesso
 
 @UseGuards(AuthGuard)
 @WebSocketGateway(81, {
-  transports: ['websocket'],
+  transports: ['polling', 'websocket'],
   cors: {
     origin: '*',
   },
@@ -378,6 +378,12 @@ export class CourseGeneratorGateway {
         }
 
         case "file": {
+          let generationProgress: GenerationProgress = {
+            progress: currentProgress,
+            message: 'Starting generation process...',
+          };
+          socket.emit('generation-progress', generationProgress);
+
           const fileContents = await this.fileContentsService.findByFileId(params.source.file_id);
           if (!fileContents || fileContents.length === 0) {
             socket.emit('error', 'No content found for the provided file.');
@@ -427,6 +433,12 @@ export class CourseGeneratorGateway {
             return;
           }
 
+          generationProgress = {
+            progress: currentProgress,
+            message: 'A course has been created. Starting lesson generation...',
+          };
+          socket.emit('generation-progress', generationProgress);
+
           let totalItemsProcessed = 0;
 
           for (let i = 0; i < fileContents.length; i++) {
@@ -468,6 +480,12 @@ export class CourseGeneratorGateway {
               socket.emit('error', 'Failed to create lesson record.');
               return;
             }
+
+            generationProgress = {
+              progress: currentProgress,
+              message: 'Lesson ' + createdLesson.lesson_number + ' created successfully. Generating sections...',
+            };
+            socket.emit('generation-progress', generationProgress);
 
             const newLessonSections: CreateLessonSectionDto[] = [];
             const lessonSections = lessonOutput?.sections || [];
@@ -542,7 +560,7 @@ export class CourseGeneratorGateway {
             totalItemsProcessed++;
 
             currentProgress = (totalItemsProcessed / fileContents.length) * 100;
-            const generationProgress: GenerationProgress = {
+            generationProgress = {
               progress: currentProgress,
               message: 'Generated ' + totalItemsProcessed + ' of ' + fileContents.length,
             };
