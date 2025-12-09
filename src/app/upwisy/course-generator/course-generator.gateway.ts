@@ -10,7 +10,7 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 import { GenerateCourseDto, GenerateFullCourseDto, GenerateQuizOnlyCourseDto } from './dto/generate-course.dto';
-import { GenerationProgress } from './../interfaces/generation-progress.interface';
+import { GenerationProgress, GenerationComplete } from './../interfaces/generation-progress.interface';
 
 import { UpwisyService } from '../upwisy.service';
 import { CoursesService } from './../../courses/courses.service';
@@ -354,6 +354,12 @@ export class CourseGeneratorGateway {
           };
           socket.emit('generation-progress', generationProgress);
 
+          const generationComplete: GenerationComplete = {
+            progress: currentProgress,
+            course_id: createdCourse.id,
+          };
+          socket.emit('generation-complete', generationComplete);
+
           break;
         }
 
@@ -547,6 +553,22 @@ export class CourseGeneratorGateway {
             socket.emit('generation-progress', generationProgress);
           }
 
+          await this.coursesService.update(createdCourse.id, {
+            status: 'ready',
+          });
+          
+          generationProgress = {
+            progress: currentProgress,
+            message: 'Generation completed successfully.',
+          };
+          socket.emit('generation-progress', generationProgress);
+
+          const generationComplete: GenerationComplete = {
+            progress: currentProgress,
+            course_id: createdCourse.id,
+          };
+          socket.emit('generation-complete', generationComplete);
+
           break;
         }
 
@@ -718,6 +740,12 @@ export class CourseGeneratorGateway {
         message: 'Generation completed successfully.',
       };
       socket.emit('generation-progress', generationProgress);
+
+      const generationComplete: GenerationComplete = {
+        progress: currentProgress,
+        course_id: createdCourse.id,
+      };
+      socket.emit('generation-complete', generationComplete);
     } catch (error) {
       socket.emit('error', 'An Error Occurred: ' + error.message);
       return;

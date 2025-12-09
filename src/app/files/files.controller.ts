@@ -112,8 +112,8 @@ export class FilesController {
       const words = pdfText.split(/\s+/).filter(word => word.length > 0);
       const chunks: string[] = [];
 
-      for (let i = 0; i < words.length; i += 1000) {
-        const chunk = words.slice(i, i + 1000).join(' ');
+      for (let i = 0; i < words.length; i += 500) {
+        const chunk = words.slice(i, i + 500).join(' ');
         chunks.push(chunk);
       }
 
