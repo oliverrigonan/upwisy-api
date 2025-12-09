@@ -344,7 +344,10 @@ export class CourseGeneratorGateway {
             }
           }
 
+          const lessons = await this.lessonsService.findByCourseId(createdCourse.id);
+
           await this.coursesService.update(createdCourse.id, {
+            total_lessons: lessons.length,
             status: 'ready',
           });
 
@@ -467,12 +470,6 @@ export class CourseGeneratorGateway {
               return;
             }
 
-            generationProgress = {
-              progress: currentProgress,
-              message: 'Lesson ' + createdLesson.lesson_number + ' created successfully. Generating sections...',
-            };
-            socket.emit('generation-progress', generationProgress);
-
             const newLessonSections: CreateLessonSectionDto[] = [];
             const lessonSections = lessonOutput?.sections || [];
             if (lessonSections.length > 0) {
@@ -553,10 +550,13 @@ export class CourseGeneratorGateway {
             socket.emit('generation-progress', generationProgress);
           }
 
+          const lessons = await this.lessonsService.findByCourseId(createdCourse.id);
+
           await this.coursesService.update(createdCourse.id, {
+            total_lessons: lessons.length,
             status: 'ready',
           });
-          
+
           generationProgress = {
             progress: currentProgress,
             message: 'Generation completed successfully.',
@@ -731,7 +731,10 @@ export class CourseGeneratorGateway {
         status: 'ready',
       });
 
+      const quizzes = await this.quizzesService.findByCourseId(createdCourse.id);
+
       await this.coursesService.update(createdCourse.id, {
+        total_quizzes: quizzes.length,
         status: 'ready',
       });
 

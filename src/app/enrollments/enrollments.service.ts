@@ -28,6 +28,7 @@ export class EnrollmentsService {
       lessons_completed: createEnrollmentDto.lessons_completed,
       quizzes_taken: createEnrollmentDto.quizzes_taken,
       status: createEnrollmentDto.status,
+      completed_at: createEnrollmentDto.completed_at,
       created_at: new Date(),
       updated_at: new Date(),
     };

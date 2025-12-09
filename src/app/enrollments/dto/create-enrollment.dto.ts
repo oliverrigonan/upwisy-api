@@ -3,7 +3,7 @@ import { ApiProperty } from "@nestjs/swagger";
 export class CreateEnrollmentDto {
   @ApiProperty()
   course_id: string;
-  
+
   @ApiProperty()
   user_id: string;
 
@@ -27,7 +27,10 @@ export class CreateEnrollmentDto {
 
   @ApiProperty()
   quizzes_taken: number;
-  
+
   @ApiProperty()
   status: string;
+
+  @ApiProperty()
+  completed_at: Date | null;
 }

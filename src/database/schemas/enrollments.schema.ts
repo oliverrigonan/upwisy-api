@@ -51,6 +51,11 @@ const EnrollmentsSchema = new mongoose.Schema({
     default: 'enrolled',
     required: true
   },
+  completed_at: {
+    type: Date,
+    default: null,
+    required: false,
+  },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },
 });

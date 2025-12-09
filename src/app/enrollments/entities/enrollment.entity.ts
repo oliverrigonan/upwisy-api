@@ -9,6 +9,7 @@ export class Enrollment {
   lessons_completed: number;
   quizzes_taken: number;
   status: string;
+  completed_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }

@@ -112,6 +112,7 @@ export class EnrollmentsController {
         lessons_completed: 0,
         quizzes_taken: 0,
         status: 'enrolled',
+        completed_at: null,
       };
 
       const createdEnrollment = await this.enrollmentsService.create(createEnrollmentDto);

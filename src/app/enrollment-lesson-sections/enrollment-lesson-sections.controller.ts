@@ -79,13 +79,15 @@ export class EnrollmentLessonSectionsController {
         completed_at: new Date(),
       });
 
-      const completedEnrollmentLessonSections = await this.enrollmentLessonSectionsService.findByEnrollmentLessonIdAndStatus(enrollmentLessonSection.enrollment_lesson_id, 'completed');
+      const enrollmentLessonSections = await this.enrollmentLessonSectionsService.findByEnrollmentLessonId(enrollmentLessonSection.enrollment_lesson_id);
+      const completedEnrollmentLessonSections = enrollmentLessonSections.filter(el => el.status === 'completed');
       await this.enrollmentLessonsService.update(enrollmentLessonSection.enrollment_lesson_id, {
         lesson_sections_completed: completedEnrollmentLessonSections.length,
       });
 
       if (completedEnrollmentLessonSections.length === enrollmentLesson.total_lesson_sections) {
         await this.enrollmentLessonsService.update(enrollmentLessonSection.enrollment_lesson_id, {
+          lesson_sections_completed: completedEnrollmentLessonSections.length,
           status: 'completed',
           completed_at: new Date(),
         });
@@ -93,10 +95,15 @@ export class EnrollmentLessonSectionsController {
 
       const enrollmentLessons = await this.enrollmentLessonsService.findByEnrollmentId(enrollmentLesson.enrollment_id);
       const completedEnrollmentLessons = enrollmentLessons.filter(el => el.status === 'completed');
+      await this.enrollmentsService.update(enrollmentLesson.enrollment_id, {
+        lessons_completed: completedEnrollmentLessons.length,
+      });
 
       if (completedEnrollmentLessons.length === enrollmentLessons.length) {
         await this.enrollmentsService.update(enrollmentLesson.enrollment_id, {
+          lessons_completed: completedEnrollmentLessons.length,
           status: 'completed',
+          completed_at: new Date(),
         });
       }
 

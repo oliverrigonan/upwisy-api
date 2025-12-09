@@ -58,16 +58,6 @@ export class EnrollmentLessonSectionsService {
       .exec();
   }
 
-  async findByEnrollmentLessonIdAndStatus(enrollment_lesson_id: string, status: string) {
-    return await this.enrollmentLessonSectionsModel
-      .find({
-        enrollment_lesson_id: enrollment_lesson_id,
-        status: status,
-      })
-      .populate('lesson_section')
-      .exec();
-  }
-
   async findOne(id: string) {
     return await this.enrollmentLessonSectionsModel
       .findById(id)

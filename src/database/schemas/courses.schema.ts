@@ -3,7 +3,7 @@ import * as mongoose from 'mongoose';
 const CoursesSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Users',
+    ref: 'users',
     required: true
   },
   title: {
@@ -32,7 +32,8 @@ const CoursesSchema = new mongoose.Schema({
     required: true
   },
   material_file_id: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'files',
     default: null,
     required: false
   },
