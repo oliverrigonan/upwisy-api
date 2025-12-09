@@ -12,7 +12,7 @@ import { z } from "zod";
 import { GenerateCourseDto, GenerateFullCourseDto, GenerateQuizOnlyCourseDto } from './dto/generate-course.dto';
 import { GenerationProgress } from './../interfaces/generation-progress.interface';
 
-import { UsersService, UserDocument } from './../../users/users.service';
+import { UpwisyService } from '../upwisy.service';
 import { CoursesService } from './../../courses/courses.service';
 import { LessonsService } from './../../lessons/lessons.service';
 import { LessonSectionsService } from './../../lesson-sections/lesson-sections.service';
@@ -24,6 +24,7 @@ import { CreateLessonSectionDto } from './../../lesson-sections/dto/create-lesso
 
 @UseGuards(AuthGuard)
 @WebSocketGateway(81, {
+  namespace: '/upwisy/course-generator',
   transports: ['polling', 'websocket'],
   cors: {
     origin: '*',
@@ -34,7 +35,7 @@ export class CourseGeneratorGateway {
   server: Server;
 
   constructor(
-    private readonly usersService: UsersService,
+    private readonly upwisyService: UpwisyService,
     private readonly coursesService: CoursesService,
     private readonly lessonsService: LessonsService,
     private readonly lessonSectionsService: LessonSectionsService,
@@ -43,7 +44,7 @@ export class CourseGeneratorGateway {
     private readonly fileContentsService: FileContentsService,
   ) { }
 
-  openai = new OpenAI();
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   courseSchema = z.object({
     title: z.string(),
@@ -80,43 +81,12 @@ export class CourseGeneratorGateway {
     items: z.array(this.quizItemStructure)
   });
 
-  async getCurrentUser(socket: Socket): Promise<UserDocument | null> {
-    const currentUser = socket.data.user;
-    if (!currentUser?.email) {
-      socket.emit('error', 'User email not found.');
-      return null;
-    }
-
-    const user = await this.usersService.findOneByEmail(currentUser.email);
-    if (!user) {
-      socket.emit('error', 'User not found.');
-      return null;
-    }
-
-    return user;
-  }
-
-  matchesClassShape<T extends object>(obj: any, classRef: new () => T): boolean {
-    if (!obj || typeof obj !== 'object') return false;
-
-    const instance = new classRef();
-    const classKeys = Object.keys(instance);
-
-    for (const key of classKeys) {
-      if (!(key in obj)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   performDataValidation(socket: Socket, data: GenerateCourseDto): void {
     if (!data || typeof data !== 'object') {
       socket.emit('error', 'Invalid data received.');
     }
 
-    if (!this.matchesClassShape(data, GenerateCourseDto)) {
+    if (!this.upwisyService.matchesClassShape(data, GenerateCourseDto)) {
       socket.emit('error', `Invalid ${GenerateCourseDto.name} structure.`);
     }
   }
@@ -147,20 +117,32 @@ export class CourseGeneratorGateway {
     @ConnectedSocket() socket: Socket,
   ): Promise<void> {
     try {
+      const currentUser = await this.upwisyService.getCurrentUser(socket);
+      if (!currentUser) return;
+
+      this.performDataValidation(socket, data);
+
       if (data.type.value === "full_course") {
-        await this.generateFullCourse(socket, {
-          source: data.type.params.source,
-          difficulty: data.difficulty,
-          allow_anonymous_users: data.allow_anonymous_users,
-        });
+        await this.generateFullCourse(
+          socket,
+          {
+            source: data.type.params.source,
+            difficulty: data.difficulty,
+            allow_anonymous_users: data.allow_anonymous_users,
+          },
+          currentUser.id);
       }
 
       if (data.type.value === "quiz_only_course") {
-        await this.generateQuizOnlyCourse(socket, {
-          file_id: data.type.params.file_id,
-          difficulty: data.difficulty,
-          allow_anonymous_users: data.allow_anonymous_users,
-        });
+        await this.generateQuizOnlyCourse(
+          socket,
+          {
+            file_id: data.type.params.file_id,
+            difficulty: data.difficulty,
+            allow_anonymous_users: data.allow_anonymous_users,
+          },
+          currentUser.id
+        );
       }
     } catch (error) {
       socket.emit('error', 'An Error Occurred: ' + error.message);
@@ -171,11 +153,9 @@ export class CourseGeneratorGateway {
   private async generateFullCourse(
     socket: Socket,
     params: GenerateFullCourseDto,
+    userId: string
   ) {
     try {
-      const currentUser = await this.getCurrentUser(socket);
-      if (!currentUser) return;
-
       let currentProgress = 0;
 
       switch (params.source.value) {
@@ -208,7 +188,7 @@ export class CourseGeneratorGateway {
           }
 
           const createdCourse = await this.coursesService.create({
-            user_id: currentUser.id,
+            user_id: userId,
             title: courseOutput.title,
             description: courseOutput.description,
             difficulty: params.difficulty,
@@ -414,7 +394,7 @@ export class CourseGeneratorGateway {
           }
 
           const createdCourse = await this.coursesService.create({
-            user_id: currentUser.id,
+            user_id: userId,
             title: courseOutput.title,
             description: courseOutput.description,
             difficulty: params.difficulty,
@@ -590,12 +570,16 @@ export class CourseGeneratorGateway {
   private async generateQuizOnlyCourse(
     socket: Socket,
     params: GenerateQuizOnlyCourseDto,
+    userId: string
   ) {
     try {
-      const currentUser = await this.getCurrentUser(socket);
-      if (!currentUser) return;
-
       let currentProgress = 0;
+
+      let generationProgress: GenerationProgress = {
+        progress: currentProgress,
+        message: 'Starting generation process...',
+      };
+      socket.emit('generation-progress', generationProgress);
 
       const fileContents = await this.fileContentsService.findByFileId(params.file_id);
       if (!fileContents || fileContents.length === 0) {
@@ -628,7 +612,7 @@ export class CourseGeneratorGateway {
       }
 
       const createdCourse = await this.coursesService.create({
-        user_id: currentUser.id,
+        user_id: userId,
         title: courseOutput.title,
         description: courseOutput.description,
         difficulty: params.difficulty,
@@ -657,6 +641,12 @@ export class CourseGeneratorGateway {
         socket.emit('error', 'Failed to create quiz record.');
         return;
       }
+
+      generationProgress = {
+        progress: currentProgress,
+        message: 'A course and quiz have been created. Starting quiz items generation...',
+      };
+      socket.emit('generation-progress', generationProgress);
 
       let totalQuizItems = 0;
       let totalItemsProcessed = 0;
@@ -707,7 +697,7 @@ export class CourseGeneratorGateway {
         totalItemsProcessed++;
 
         currentProgress = (totalItemsProcessed / fileContents.length) * 100;
-        const generationProgress: GenerationProgress = {
+        generationProgress = {
           progress: currentProgress,
           message: 'Generated ' + totalItemsProcessed + ' of ' + fileContents.length,
         };
@@ -723,7 +713,7 @@ export class CourseGeneratorGateway {
         status: 'ready',
       });
 
-      const generationProgress: GenerationProgress = {
+      generationProgress = {
         progress: currentProgress,
         message: 'Generation completed successfully.',
       };

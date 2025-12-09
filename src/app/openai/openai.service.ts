@@ -3,15 +3,21 @@ import { HttpService } from '@nestjs/axios';
 
 import { firstValueFrom } from 'rxjs';
 
-import { SessionConfig } from './entities/openai-realtime.entity';
+import { LessonsService } from '../lessons/lessons.service';
+import { LessonSectionsService } from '../lesson-sections/lesson-sections.service';
+import { CoursesService } from '../courses/courses.service';
 
+import { SessionConfig } from './entities/openai-realtime.entity';
 import { OfferSDPDto } from './dto/offer-sdp.dto';
 
 @Injectable()
 export class OpenaiService {
 
   constructor(
-    private readonly httpService: HttpService
+    private readonly httpService: HttpService,
+    private readonly lessonsService: LessonsService,
+    private readonly lessonSectionsService: LessonSectionsService,
+    private readonly coursesService: CoursesService,
   ) { }
 
   sessionConfig: SessionConfig = {
@@ -54,7 +60,45 @@ export class OpenaiService {
     tools: [],
   };
 
-  async createRealtimeSession(): Promise<string | null> {
+  async createRealtimeSession(lesson_id: string): Promise<string | null> {
+    const lesson = await this.lessonsService.findOne(lesson_id.toString());
+    if (!lesson) {
+      throw new Error('Lesson not found');
+    }
+
+    const lessonSections = await this.lessonSectionsService.findByLessonId(lesson.id.toString());
+    if (!lessonSections || lessonSections.length === 0) {
+      throw new Error('Lesson sections not found');
+    }
+
+    const course = await this.coursesService.findOne(lesson.course_id.toString());
+    if (!course) {
+      throw new Error('Course not found');
+    }
+
+    const instructions = String.raw`
+      You are Upwisy, an AI Teacher Assistant dedicated to helping users learn effectively.
+      You will assist the user in learning the following course: "${course.title}".
+      The current lesson is titled: "${lesson.title}".
+
+      Lesson Description:
+      ${lesson.description}
+
+      Lesson Sections:
+      ${lessonSections.map((section, index) => `
+      Section ${index + 1}: ${section.title}
+      Topics: ${section.topics.join(', ')}
+      Content: ${section.content}
+      Summary: ${section.summary}
+      `).join('\n')}
+
+      Use the above information to provide accurate and helpful responses to the user's questions about the lesson.
+      Always encourage the user to engage with the material and ask questions if they need further clarification.
+      Remember to be patient and supportive, as your goal is to facilitate effective learning.
+    `
+
+    this.sessionConfig.instructions = instructions;
+
     const endpoint = `${process.env.OPENAI_API_BASE_URL}/realtime/client_secrets`;
     const headers = {
       'Content-Type': 'application/json',

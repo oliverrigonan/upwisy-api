@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Param, Body, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthGuard } from './../auth/auth.http-guard';
@@ -17,10 +17,10 @@ export class OpenaiController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Post("realtime/create-session")
-  async createRealtimeSession() {
+  @Post("realtime/create-session/:lesson_id")
+  async createRealtimeSession(@Param('lesson_id') lessonId: string) {
     try {
-      return await this.openaiService.createRealtimeSession();
+      return await this.openaiService.createRealtimeSession(lessonId);
     } catch (error) {
       throw new HttpException(
         {

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { CourseGeneratorGateway } from './course-generator.gateway';
 
+import { UpwisyService } from '../upwisy.service';
 import { UsersService } from './../../users/users.service';
 import { CoursesService } from './../../courses/courses.service';
 import { LessonsService } from './../../lessons/lessons.service';
@@ -22,7 +23,8 @@ import { FileContentsModelProvider } from './../../../database/schemas/file-cont
 @Module({
   providers: [
     CourseGeneratorGateway,
-
+    
+    UpwisyService,
     UsersService,
     CoursesService,
     LessonsService,
