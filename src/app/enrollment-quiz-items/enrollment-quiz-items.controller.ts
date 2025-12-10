@@ -5,6 +5,8 @@ import { AuthGuard } from './../auth/auth.http-guard';
 
 import { EnrollmentQuizItemsService } from './enrollment-quiz-items.service';
 import { EnrollmentQuizzesService } from '../enrollment-quizzes/enrollment-quizzes.service';
+import { EnrollmentsService } from '../enrollments/enrollments.service';
+
 import { QuizItemsService } from '../quiz-items/quiz-items.service';
 
 import { SubmitEnrollmentQuizItemDto } from './dto/submit-enrollment-quiz-item.dto';
@@ -16,6 +18,7 @@ export class EnrollmentQuizItemsController {
   constructor(
     private readonly enrollmentQuizItemsService: EnrollmentQuizItemsService,
     private readonly enrollmentQuizzesService: EnrollmentQuizzesService,
+    private readonly enrollmentsService: EnrollmentsService,
     private readonly quizItemsService: QuizItemsService,
   ) { }
 
@@ -90,6 +93,12 @@ export class EnrollmentQuizItemsController {
         date_taken: new Date(),
         score: score,
         is_submitted: true,
+      });
+
+      const enrollmentQuizzes = await this.enrollmentQuizzesService.findByEnrollmentId(enrollmentQuiz.enrollment_id.toString());
+      await this.enrollmentsService.update(enrollmentQuiz.enrollment_id.toString(), {
+        quizzes_taken: enrollmentQuizzes.filter(eq => eq.is_submitted).length,
+        status: enrollmentQuizzes.filter(eq => eq.is_submitted).length === enrollmentQuizzes.length ? 'completed' : 'active',
       });
 
       const updatedEnrollmentQuizItems = await this.enrollmentQuizItemsService.findByEnrollmentQuizId(enrollment_quiz_id);
