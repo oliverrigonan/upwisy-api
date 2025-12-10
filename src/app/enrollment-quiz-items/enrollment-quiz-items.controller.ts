@@ -1,44 +1,110 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AuthGuard } from './../auth/auth.http-guard';
 
 import { EnrollmentQuizItemsService } from './enrollment-quiz-items.service';
+import { EnrollmentQuizzesService } from '../enrollment-quizzes/enrollment-quizzes.service';
+import { QuizItemsService } from '../quiz-items/quiz-items.service';
 
-import { CreateEnrollmentQuizItemDto } from './dto/create-enrollment-quiz-item.dto';
-import { UpdateEnrollmentQuizItemDto } from './dto/update-enrollment-quiz-item.dto';
+import { SubmitEnrollmentQuizItemDto } from './dto/submit-enrollment-quiz-item.dto';
 
 @ApiTags('Enrollment Quiz Items')
 @Controller('api/enrollment-quiz-items')
 export class EnrollmentQuizItemsController {
 
   constructor(
-    private readonly enrollmentQuizItemsService: EnrollmentQuizItemsService
+    private readonly enrollmentQuizItemsService: EnrollmentQuizItemsService,
+    private readonly enrollmentQuizzesService: EnrollmentQuizzesService,
+    private readonly quizItemsService: QuizItemsService,
   ) { }
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
-  @Post()
-  async create(@Body() createEnrollmentQuizItemDto: CreateEnrollmentQuizItemDto) {
+  @Patch('submit-quiz/:enrollment_quiz_id')
+  async submitQuiz(
+    @Param('enrollment_quiz_id') enrollment_quiz_id: string,
+    @Body() submitEnrollmentQuizItemDtos: SubmitEnrollmentQuizItemDto[]
+  ) {
     try {
-      return await this.enrollmentQuizItemsService.create(createEnrollmentQuizItemDto);
+      const enrollmentQuiz = await this.enrollmentQuizzesService.findOne(enrollment_quiz_id);
+      if (!enrollmentQuiz) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Enrollment quiz not found',
+            error: `The enrollment quiz with ID ${enrollment_quiz_id} does not exist.`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      if (!submitEnrollmentQuizItemDtos || submitEnrollmentQuizItemDtos.length === 0) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'No quiz items to update',
+            error: 'The request body is empty.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const enrollmentQuizItems = await this.enrollmentQuizItemsService.findByEnrollmentQuizId(enrollment_quiz_id);
+      if (!enrollmentQuizItems || enrollmentQuizItems.length === 0) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Enrollment quiz items not found',
+            error: `No enrollment quiz items found for enrollment quiz ID ${enrollment_quiz_id}.`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      let score = 0;
+
+      for (const submitEnrollmentQuizItemDto of submitEnrollmentQuizItemDtos) {
+        const enrollmentQuizItem = enrollmentQuizItems.filter(item => item.quiz_item_id.toString() === submitEnrollmentQuizItemDto.quiz_item_id.toString());
+        if (enrollmentQuizItem) {
+          const quizItem = await this.quizItemsService.findOne(submitEnrollmentQuizItemDto.quiz_item_id);
+
+          let isCorrect = false;
+          if (quizItem) {
+            isCorrect = quizItem.correct_answer === submitEnrollmentQuizItemDto.user_answer;
+          }
+
+          if (isCorrect) {
+            score++;
+          }
+
+          await this.enrollmentQuizItemsService.update(enrollmentQuizItem[0].id, {
+            user_answer: submitEnrollmentQuizItemDto.user_answer,
+            is_correct: isCorrect,
+            answered_at: new Date(),
+          });
+        }
+      }
+
+      await this.enrollmentQuizzesService.update(enrollment_quiz_id, {
+        date_taken: new Date(),
+        score: score,
+        is_submitted: true,
+      });
+
+      const updatedEnrollmentQuizItems = await this.enrollmentQuizItemsService.findByEnrollmentQuizId(enrollment_quiz_id);
+
+      return updatedEnrollmentQuizItems;
     } catch (error) {
       throw new HttpException(
         {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to create enrollment quiz item',
+          message: 'Failed to update enrollment quiz',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Get()
-  async findAll() {
-    return await this.enrollmentQuizItemsService.findAll();
   }
 
   @ApiBearerAuth()
@@ -55,65 +121,5 @@ export class EnrollmentQuizItemsController {
   async findOne(@Param('id') id: string) {
     const enrollmentQuizItem = await this.enrollmentQuizItemsService.findOne(id);
     return enrollmentQuizItem;
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateEnrollmentQuizItemDto: UpdateEnrollmentQuizItemDto) {
-    try {
-      const enrollmentQuizItem = await this.enrollmentQuizItemsService.findOne(id);
-      if (!enrollmentQuizItem) {
-        throw new HttpException(
-          {
-            statusCode: HttpStatus.NOT_FOUND,
-            message: 'Enrollment quiz item not found',
-            error: `The enrollment quiz item with ID ${id} does not exist.`,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      return this.enrollmentQuizItemsService.update(id, updateEnrollmentQuizItemDto);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to update enrollment quiz item',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    try {
-      const enrollmentQuizItem = await this.enrollmentQuizItemsService.findOne(id);
-      if (!enrollmentQuizItem) {
-        throw new HttpException(
-          {
-            statusCode: HttpStatus.NOT_FOUND,
-            message: 'Enrollment quiz-items not found',
-            error: `The enrollment quiz-items with ID ${id} does not exist.`,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      return this.enrollmentQuizItemsService.remove(id);
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message: 'Failed to remove enrollment quiz item',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
   }
 }
