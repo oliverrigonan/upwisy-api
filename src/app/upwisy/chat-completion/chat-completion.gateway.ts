@@ -13,7 +13,7 @@ import { ChatMessages, CreateChatCompletionDto } from './dto/create-chat-complet
 @UseGuards(AuthGuard)
 @WebSocketGateway({
   namespace: '/upwisy/chat-completion',
-  transports: ['websocket'],
+  transports: ['polling', 'websocket'],
   cors: {
     origin: '*',
   },
