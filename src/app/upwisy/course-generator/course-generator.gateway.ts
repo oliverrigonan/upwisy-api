@@ -25,7 +25,7 @@ import { CreateLessonSectionDto } from './../../lesson-sections/dto/create-lesso
 @UseGuards(AuthGuard)
 @WebSocketGateway({
   namespace: '/upwisy/course-generator',
-  transports: ['websocket'],
+  transports: ['polling', 'websocket'],
   cors: {
     origin: '*',
   },
