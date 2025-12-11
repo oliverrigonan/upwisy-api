@@ -23,7 +23,7 @@ import { FileContentsService } from './../../file-contents/file-contents.service
 import { CreateLessonSectionDto } from './../../lesson-sections/dto/create-lesson-section.dto';
 
 @UseGuards(AuthGuard)
-@WebSocketGateway(81, {
+@WebSocketGateway({
   namespace: '/upwisy/course-generator',
   transports: ['polling', 'websocket'],
   cors: {
