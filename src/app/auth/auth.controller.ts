@@ -23,7 +23,7 @@ export class AuthController {
     const encoded = encodeURIComponent(JSON.stringify(result));
 
     return res.redirect(
-      `http://localhost:4200/auth/google-callback?data=${encoded}`
+      `${process.env.OAUTH_GOOGLE_REDIRECT_URL}/auth/google-callback?data=${encoded}`
     );
   }
 }
