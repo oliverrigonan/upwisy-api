@@ -11,7 +11,7 @@ import { UpwisyService } from '../upwisy.service';
 import { ChatMessages, CreateChatCompletionDto } from './dto/create-chat-completion.dto';
 
 @UseGuards(AuthGuard)
-@WebSocketGateway(81, {
+@WebSocketGateway({
   namespace: '/upwisy/chat-completion',
   transports: ['polling', 'websocket'],
   cors: {
