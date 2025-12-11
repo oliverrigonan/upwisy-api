@@ -6,7 +6,7 @@ import { AuthGuard } from './../auth/auth.http-guard';
 import { LessonSectionsService } from './lesson-sections.service';
 
 @ApiTags('Lesson Sections')
-@Controller('lesson-sections')
+@Controller('api/lesson-sections')
 export class LessonSectionsController {
 
   constructor(
