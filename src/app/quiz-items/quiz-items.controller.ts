@@ -6,7 +6,7 @@ import { AuthGuard } from './../auth/auth.http-guard';
 import { QuizItemsService } from './quiz-items.service';
 
 @ApiTags('Quiz Items')
-@Controller('quiz-items')
+@Controller('api/quiz-items')
 export class QuizItemsController {
 
   constructor(
