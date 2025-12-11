@@ -1,0 +1,11 @@
+services:
+  app:
+    image: oliverrigonan/upwisy-api:latest
+    container_name: upwisy-api
+    env_file:
+     - .env
+    ports:
+     - 3010:3000
+    volumes:
+     - /var/www/html/upwisy-api/.env:/usr/src/app/.env
+  
