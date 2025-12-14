@@ -1,5 +1,5 @@
 import { WebSocketGateway, WebSocketServer, SubscribeMessage, ConnectedSocket, MessageBody } from '@nestjs/websockets';
-import { UseGuards } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
 
 import { Server, Socket } from 'socket.io';
 
@@ -10,12 +10,12 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 import { GenerateCourseDto, GenerateFullCourseDto, GenerateQuizOnlyCourseDto } from './dto/generate-course.dto';
-import { GenerationProgress, GenerationComplete } from './../interfaces/generation-progress.interface';
+import { GenerationProgress, GenerationComplete, FullCourseGenerationProgress } from './../interfaces/generation-progress.interface';
 
 import { UpwisyService } from '../upwisy.service';
 import { CoursesService } from './../../courses/courses.service';
-import { LessonsService } from './../../lessons/lessons.service';
-import { LessonSectionsService } from './../../lesson-sections/lesson-sections.service';
+import { LessonsService, LessonDocument } from './../../lessons/lessons.service';
+import { LessonSectionsService, LessonSectionDocument } from './../../lesson-sections/lesson-sections.service';
 import { QuizzesService } from './../../quizzes/quizzes.service';
 import { QuizItemsService } from './../../quiz-items/quiz-items.service';
 import { FileContentsService } from './../../file-contents/file-contents.service';
@@ -156,16 +156,28 @@ export class CourseGeneratorGateway {
     userId: string
   ) {
     try {
-      let currentProgress = 0;
+      const fullCourseGenerationProgress: FullCourseGenerationProgress = {
+        course: {
+          id: '',
+          title: '',
+          progress: 0,
+          status: '',
+        },
+        lessons: [],
+        quizzes: [],
+      };
+
+      fullCourseGenerationProgress.course = {
+        id: '',
+        title: '',
+        progress: 0,
+        status: 'generating',
+      };
+      socket.emit('generation-progress', fullCourseGenerationProgress);
+      Logger.log(fullCourseGenerationProgress);
 
       switch (params.source.value) {
         case "file": {
-          let generationProgress: GenerationProgress = {
-            progress: currentProgress,
-            message: 'Starting generation process...',
-          };
-          socket.emit('generation-progress', generationProgress);
-
           const fileContents = await this.fileContentsService.findByFileId(params.source.file_id);
           if (!fileContents || fileContents.length === 0) {
             socket.emit('error', 'No content found for the provided file.');
@@ -215,17 +227,16 @@ export class CourseGeneratorGateway {
             return;
           }
 
-          generationProgress = {
-            progress: currentProgress,
-            message: 'A course has been created. Starting lesson generation...',
+          fullCourseGenerationProgress.course = {
+            id: createdCourse.id,
+            title: createdCourse.title,
+            progress: 100,
+            status: 'generated',
           };
-          socket.emit('generation-progress', generationProgress);
+          socket.emit('generation-progress', fullCourseGenerationProgress);
+          Logger.log(fullCourseGenerationProgress);
 
-          let totalItemsProcessed = 0;
-
-          for (let i = 0; i < fileContents.length; i++) {
-            const fileContent = fileContents[i];
-
+          const lessonAndSectionsGenerationPerFileContent = fileContents.map(async ({ content }) => {
             const lessonInstructions = String.raw`
               You are an expert course designer. Based on the course title and description provided, create a detailed lesson. 
               The lesson should have a number, title, description, and a list of sections. 
@@ -234,7 +245,7 @@ export class CourseGeneratorGateway {
               Ensure the lesson is well-structured and covers all essential aspects of the subject.
               Provide the response in the specified structured format.
             `;
-            const lessonContent = `Course Title: ${courseOutput.title}\nCourse Description: ${courseOutput.description}\n\nFile Content:\n${fileContent.content}`;
+            const lessonContent = `Course Title: ${courseOutput.title}\nCourse Description: ${courseOutput.description}\n\nFile Content:\n${content}`;
 
             const lessonResponse = await this.generateWithStructure(
               lessonInstructions,
@@ -244,119 +255,83 @@ export class CourseGeneratorGateway {
             );
 
             const lessonOutput = lessonResponse.output_parsed;
-            if (!lessonOutput) {
-              socket.emit('error', 'Failed to parse lessons output.');
-              return;
-            }
+            if (lessonOutput) {
+              const createdLesson = await this.lessonsService.create({
+                course_id: createdCourse.id,
+                title: lessonOutput.title,
+                description: lessonOutput.description,
+                lesson_number: lessonOutput.number,
+                total_lesson_sections: lessonOutput.sections.length,
+                status: 'pending',
+              });
 
-            const createdLesson = await this.lessonsService.create({
-              course_id: createdCourse.id,
-              title: lessonOutput.title,
-              description: lessonOutput.description,
-              lesson_number: lessonOutput.number,
-              total_lesson_sections: lessonOutput.sections.length,
-              status: 'pending',
-            });
-
-            if (!createdLesson) {
-              socket.emit('error', 'Failed to create lesson record.');
-              return;
-            }
-
-            const newLessonSections: CreateLessonSectionDto[] = [];
-            const lessonSections = lessonOutput?.sections || [];
-            if (lessonSections.length > 0) {
-              for (let j = 0; j < lessonSections.length; j++) {
-                const section = lessonSections[j];
-                newLessonSections.push({
-                  lesson_id: createdLesson.id,
-                  title: section.title,
-                  topics: section.topics,
-                  content: 'generating...',
-                  summary: 'generating...',
-                  tokens_used: 0,
-                  status: 'pending',
-                });
-              }
-            }
-
-            const createdLessonSections = await this.lessonSectionsService.createMany(newLessonSections);
-            if (!createdLessonSections || createdLessonSections.length === 0) {
-              socket.emit('error', 'Failed to create lesson section records.');
-              return;
-            }
-
-            const lesson = createdLesson;
-            await this.lessonsService.update(lesson.id, {
-              status: 'generating',
-            });
-
-            let previousSummary = "";
-
-            const lessonSectionsPerLesson = createdLessonSections.filter(section => section.lesson_id.toString() === lesson.id.toString());
-            if (lessonSectionsPerLesson.length > 0) {
-              for (let j = 0; j < lessonSectionsPerLesson.length; j++) {
-                await this.lessonSectionsService.update(lessonSectionsPerLesson[j].id, {
+              if (createdLesson) {
+                await this.lessonsService.update(createdLesson.id, {
                   status: 'generating',
                 });
 
-                const lessonSectionInstructions = String.raw`
-                  You are an expert content creator. Given the lesson title, previous section summary, section title, and topics, create detailed content for the lesson section.
-                  The content should be tailored for a ${params.difficulty} difficulty level.
-                  Ensure the content is informative, engaging, and covers all topics provided.
-                  Additionally, provide a concise summary of the section content for future reference.
-                  Provide the response in the specified structured format.
-                `;
-                const lessonSectionContent = `Lesson Title: ${lesson.title}\nSection Title: ${lessonSectionsPerLesson[j].title}\n\nTopics:\n${lessonSectionsPerLesson[j].topics.join(", ")}\n\nPrevious Summary:\n${previousSummary}`;
-
-                const lessonSectionResponse = await this.generateWithStructure(
-                  lessonSectionInstructions,
-                  lessonSectionContent,
-                  this.lessonSectionSchema,
-                  "lesson_sections"
-                );
-
-                const lessonSectionOutput = lessonSectionResponse.output_parsed;
-                if (lessonSectionOutput) {
-                  const updatedLessonSection = await this.lessonSectionsService.update(lessonSectionsPerLesson[j].id, {
-                    content: lessonSectionOutput.content,
-                    summary: lessonSectionOutput.summary,
-                    status: 'ready',
-                  });
-
-                  previousSummary = updatedLessonSection ? updatedLessonSection.summary : "";
+                const generatedLessonSections: CreateLessonSectionDto[] = [];
+                const lessonSections = lessonOutput?.sections || [];
+                if (lessonSections.length > 0) {
+                  for (let j = 0; j < lessonSections.length; j++) {
+                    const section = lessonSections[j];
+                    generatedLessonSections.push({
+                      lesson_id: createdLesson.id,
+                      title: section.title,
+                      topics: section.topics,
+                      content: 'generating...',
+                      summary: 'generating...',
+                      tokens_used: 0,
+                      status: 'pending',
+                    });
+                  }
                 }
 
-                await this.lessonsService.update(lesson.id, {
-                  status: 'ready',
-                });
+                await this.lessonSectionsService.createMany(generatedLessonSections);
               }
             }
-
-            totalItemsProcessed++;
-
-            currentProgress = (totalItemsProcessed / fileContents.length) * 100;
-            generationProgress = {
-              progress: currentProgress,
-              message: 'Generated ' + totalItemsProcessed + ' of ' + fileContents.length,
-            };
-            socket.emit('generation-progress', generationProgress);
-          }
-
-          const lessons = await this.lessonsService.findByCourseId(createdCourse.id);
-
-          await this.coursesService.update(createdCourse.id, {
-            total_lessons: lessons.length,
-            status: 'ready',
           });
 
-          generationProgress = {
-            progress: currentProgress,
-            message: 'Lesson content generation completed. Starting quiz generation...',
-          };
-          socket.emit('generation-progress', generationProgress);
+          await Promise.all(lessonAndSectionsGenerationPerFileContent);
 
-          currentProgress = 0;
+          const createdLessons = await this.lessonsService.findByCourseId(createdCourse.id);
+          if (!createdLessons || createdLessons.length === 0) {
+            socket.emit('error', 'Failed to create lesson records.');
+            return;
+          }
+
+          fullCourseGenerationProgress.lessons = createdLessons.map(lesson => ({
+            id: lesson.id,
+            title: lesson.title,
+            progress: 0,
+            status: 'generating',
+            lesson_sections: [],
+          }));
+          socket.emit('generation-progress', fullCourseGenerationProgress);
+          Logger.log(fullCourseGenerationProgress);
+
+          const createdLessonSections: LessonSectionDocument[] = [];
+          for (let i = 0; i < createdLessons.length; i++) {
+            const lessonSections = await this.lessonSectionsService.findByLessonId(createdLessons[i].id);
+            createdLessonSections.push(...lessonSections);
+          }
+
+          fullCourseGenerationProgress.lessons.map(lesson => {
+            const lessonSections = createdLessonSections.filter(
+              lessonSection => lessonSection.lesson_id.toString() === lesson.id.toString()
+            );
+
+            lesson.progress = 100;
+            lesson.status = 'generated';
+            lesson.lesson_sections = lessonSections.map(lessonSection => ({
+              id: lessonSection.id,
+              title: lessonSection.title,
+              progress: 0,
+              status: 'generating',
+            }))
+          });
+          socket.emit('generation-progress', fullCourseGenerationProgress);
+          Logger.log(fullCourseGenerationProgress);
 
           const createdQuiz = await this.quizzesService.create({
             course_id: createdCourse.id,
@@ -369,28 +344,82 @@ export class CourseGeneratorGateway {
             return;
           }
 
-          generationProgress = {
-            progress: currentProgress,
-            message: 'A quiz has been created. Starting quiz items generation...',
-          };
-          socket.emit('generation-progress', generationProgress);
+          fullCourseGenerationProgress.quizzes[0] = {
+            id: createdQuiz.id,
+            progress: 0,
+            status: 'generating',
+            quiz_items: [],
+          }
+          socket.emit('generation-progress', fullCourseGenerationProgress);
+          Logger.log(fullCourseGenerationProgress);
 
-          let totalQuizItems = 0;
-          totalItemsProcessed = 0;
+          const allLessonSections: Array<{
+            lesson: LessonDocument;
+            lessonSection: LessonSectionDocument;
+            lessonSectionPreviousSummary: string
+          }> = [];
 
-          let overallTotalLessonSections = 0;
-          for (let i = 0; i < lessons.length; i++) {
-            const lesson = lessons[i];
-            const lessonSections = await this.lessonSectionsService.findByLessonId(lesson.id);
-            overallTotalLessonSections += lessonSections.length;
+          for (const createdLesson of createdLessons) {
+            const lessonSections = await this.lessonSectionsService.findByLessonId(createdLesson.id);
+
+            let previousSummary = "";
+            for (const lessonSection of lessonSections) {
+              allLessonSections.push({
+                lesson: createdLesson,
+                lessonSection: lessonSection,
+                lessonSectionPreviousSummary: previousSummary
+              });
+              previousSummary = lessonSection.summary || "";
+            }
           }
 
-          for (let i = 0; i < lessons.length; i++) {
-            const lesson = lessons[i];
-            const lessonSections = await this.lessonSectionsService.findByLessonId(lesson.id);
+          const lessonSectionsAndQuizItemsGeneration = allLessonSections.map(async ({ lesson, lessonSection, lessonSectionPreviousSummary }) => {
+            await this.lessonSectionsService.update(lessonSection.id, {
+              status: 'generating',
+            });
 
-            for (let j = 0; j < lessonSections.length; j++) {
-              const lessonSection = lessonSections[j];
+            const lessonSectionInstructions = String.raw`
+              You are an expert content creator. Given the lesson title, previous section summary, section title, and topics, create detailed content for the lesson section.
+              The content should be tailored for a ${params.difficulty} difficulty level.
+              Ensure the content is informative, engaging, and covers all topics provided.
+              Additionally, provide a concise summary of the section content for future reference.
+              Provide the response in the specified structured format.
+            `;
+            const lessonSectionContent = `Lesson Title: ${lesson.title}\nSection Title: ${lessonSection.title}\n\nTopics:\n${lessonSection.topics.join(", ")}\n\nPrevious Summary:\n${lessonSectionPreviousSummary}`;
+
+            const lessonSectionResponse = await this.generateWithStructure(
+              lessonSectionInstructions,
+              lessonSectionContent,
+              this.lessonSectionSchema,
+              "lesson_sections"
+            );
+
+            const lessonSectionOutput = lessonSectionResponse.output_parsed;
+            if (lessonSectionOutput) {
+              await this.lessonSectionsService.update(lessonSection.id, {
+                content: lessonSectionOutput.content,
+                summary: lessonSectionOutput.summary,
+                status: 'ready',
+              });
+
+              const lessonSections = await this.lessonSectionsService.findByLessonId(lesson.id);
+              const notReadyLessonSections = lessonSections.filter(section => section.status !== 'ready');
+              if (notReadyLessonSections.length === 0) {
+                await this.lessonsService.update(lesson.id, {
+                  status: 'ready',
+                });
+              }
+
+              const progressLesson = fullCourseGenerationProgress.lessons.find(l => l.id.toString() === lesson.id.toString());
+              if (progressLesson) {
+                const progressLessonSection = progressLesson.lesson_sections.find(ls => ls.id.toString() === lessonSection.id.toString());
+                if (progressLessonSection) {
+                  progressLessonSection.progress = 100;
+                  progressLessonSection.status = 'generated';
+                }
+              }
+              socket.emit('generation-progress', fullCourseGenerationProgress);
+              Logger.log(fullCourseGenerationProgress);
 
               const quizItemsInstructions = String.raw`
                 You are an expert quiz creator. Based on the course title and description provided, create a set of at least 5 to 10 quiz items. 
@@ -399,7 +428,7 @@ export class CourseGeneratorGateway {
                 Ensure the quiz items are well-structured and effectively assess knowledge of the subject.
                 Provide the response in the specified structured format.
               `;
-              const quizItemsContent = `Course Title: ${lesson.title}\nCourse Description: ${courseOutput.description}\n\nLesson Title: ${lesson.title}\nLesson Description: ${lesson.description}\n\nLesson Section Title: ${lessonSection.title}\nLesson Section Content:\n${lessonSection.content}`;
+              const quizItemsContent = `Course Title: ${createdCourse.title}\nCourse Description: ${createdCourse.description}\n\nLesson Title: ${lesson.title}\nLesson Description: ${lesson.description}\n\nLesson Section Title: ${lessonSection.title}\nLesson Section Content:\n${lessonSectionOutput.content}`;
 
               const quizItemsResponse = await this.generateWithStructure(
                 quizItemsInstructions,
@@ -409,60 +438,58 @@ export class CourseGeneratorGateway {
               );
 
               const quizItemsOutput = quizItemsResponse.output_parsed;
-              if (!quizItemsOutput) {
-                socket.emit('error', 'Failed to parse quiz items output.');
-                return;
+              if (quizItemsOutput) {
+                const createdQuizItems = await this.quizItemsService.createMany(
+                  quizItemsOutput.items.map(item => ({
+                    quiz_id: createdQuiz.id,
+                    type: 'multiple_choice',
+                    question: item.question,
+                    options: item.options,
+                    correct_answer: item.correct_answer,
+                    answer_explanation: '',
+                    status: 'ready',
+                  }))
+                );
+
+                if (createdQuizItems && createdQuizItems.length > 0) {
+                  fullCourseGenerationProgress.quizzes[0].quiz_items.push(...createdQuizItems.map(quizItem => ({
+                    id: quizItem.id,
+                    question: quizItem.question,
+                    progress: 100,
+                    status: 'generated',
+                  })));
+
+                  fullCourseGenerationProgress.quizzes[0].progress = (fullCourseGenerationProgress.quizzes[0].quiz_items.length / createdQuizItems.length) * 100;
+                  if (fullCourseGenerationProgress.quizzes[0].progress === 100) {
+                    fullCourseGenerationProgress.quizzes[0].status = 'generated';
+                  }
+
+                  socket.emit('generation-progress', fullCourseGenerationProgress);
+                  Logger.log(fullCourseGenerationProgress);
+                }
               }
-
-              const createdQuizItems = await this.quizItemsService.createMany(
-                quizItemsOutput.items.map(item => ({
-                  quiz_id: createdQuiz.id,
-                  type: 'multiple_choice',
-                  question: item.question,
-                  options: item.options,
-                  correct_answer: item.correct_answer,
-                  answer_explanation: '',
-                  status: 'ready',
-                }))
-              );
-
-              if (!createdQuizItems || createdQuizItems.length === 0) {
-                socket.emit('error', 'Failed to create quiz item records.');
-                return;
-              }
-
-              totalQuizItems += createdQuizItems.length;
-              totalItemsProcessed++;
-
-              currentProgress = (totalItemsProcessed / overallTotalLessonSections) * 100;
-              generationProgress = {
-                progress: currentProgress,
-                message: 'Generated ' + totalItemsProcessed + ' of ' + overallTotalLessonSections,
-              };
-              socket.emit('generation-progress', generationProgress);
             }
-          }
+          });
 
+          await Promise.all(lessonSectionsAndQuizItemsGeneration);
+
+          const quizItems = await this.quizItemsService.findByQuizId(createdQuiz.id);
           await this.quizzesService.update(createdQuiz.id, {
-            total_items: totalQuizItems,
+            total_items: quizItems.length,
             status: 'ready',
           });
 
+          const lessons = await this.lessonsService.findByCourseId(createdCourse.id);
           const quizzes = await this.quizzesService.findByCourseId(createdCourse.id);
 
           await this.coursesService.update(createdCourse.id, {
+            total_lessons: lessons.length,
             total_quizzes: quizzes.length,
             status: 'ready',
           });
 
-          generationProgress = {
-            progress: currentProgress,
-            message: 'Generation completed successfully.',
-          };
-          socket.emit('generation-progress', generationProgress);
-
           const generationComplete: GenerationComplete = {
-            progress: currentProgress,
+            progress: 100,
             course_id: createdCourse.id,
           };
           socket.emit('generation-complete', generationComplete);
@@ -471,12 +498,6 @@ export class CourseGeneratorGateway {
         }
 
         case "subject": {
-          let generationProgress: GenerationProgress = {
-            progress: currentProgress,
-            message: 'Starting generation process...',
-          };
-          socket.emit('generation-progress', generationProgress);
-
           const courseInstructions = String.raw`
             You are an expert course designer. Given the subject provided by the user, create a comprehensive course.
             The course should include a detailed title and an in-depth description that covers the scope, objectives, and key learning outcomes.
@@ -518,6 +539,14 @@ export class CourseGeneratorGateway {
             return;
           }
 
+          fullCourseGenerationProgress.course = {
+            id: createdCourse.id,
+            title: createdCourse.title,
+            progress: 100,
+            status: 'generated',
+          };
+          socket.emit('generation-progress', fullCourseGenerationProgress);
+
           const lessonsInstructions = String.raw`
             You are an expert course designer. Based on the course title and description provided, create a detailed list of lessons. 
             Each lesson should have a number, title, description, and a list of sections. 
@@ -557,19 +586,28 @@ export class CourseGeneratorGateway {
             return;
           }
 
-          const newLessonSections: CreateLessonSectionDto[] = [];
+          fullCourseGenerationProgress.lessons = createdLessons.map(lesson => ({
+            id: lesson.id,
+            title: lesson.title,
+            progress: 0,
+            status: 'generating',
+            lesson_sections: [],
+          }));
+          socket.emit('generation-progress', fullCourseGenerationProgress);
+
+          const generatedLessonSections: CreateLessonSectionDto[] = [];
           for (let i = 0; i < createdLessons.length; i++) {
-            const lesson = lessonsOutput.lessons.find(l =>
+            const generatedLesson = lessonsOutput.lessons.find(l =>
               l.number === createdLessons[i].lesson_number &&
               l.title === createdLessons[i].title &&
               l.description === createdLessons[i].description
             );
 
-            const lessonSections = lesson?.sections || [];
+            const lessonSections = generatedLesson?.sections || [];
             if (lessonSections.length > 0) {
               for (let j = 0; j < lessonSections.length; j++) {
                 const section = lessonSections[j];
-                newLessonSections.push({
+                generatedLessonSections.push({
                   lesson_id: createdLessons[i].id,
                   title: section.title,
                   topics: section.topics,
@@ -582,92 +620,27 @@ export class CourseGeneratorGateway {
             }
           }
 
-          const createdLessonSections = await this.lessonSectionsService.createMany(newLessonSections);
+          const createdLessonSections = await this.lessonSectionsService.createMany(generatedLessonSections);
           if (!createdLessonSections || createdLessonSections.length === 0) {
             socket.emit('error', 'Failed to create lesson section records.');
             return;
           }
 
-          generationProgress = {
-            progress: currentProgress,
-            message: 'Course and lessons created successfully. Starting content generation...',
-          };
-          socket.emit('generation-progress', generationProgress);
+          fullCourseGenerationProgress.lessons.map(lesson => {
+            const lessonSections = createdLessonSections.filter(
+              lessonSection => lessonSection.lesson_id.toString() === lesson.id.toString()
+            );
 
-          let totalItemsProcessed = 0;
-
-          for (let i = 0; i < createdLessons.length; i++) {
-            const lesson = createdLessons[i];
-
-            await this.lessonsService.update(lesson.id, {
+            lesson.progress = 100;
+            lesson.status = 'generated';
+            lesson.lesson_sections = lessonSections.map(lessonSection => ({
+              id: lessonSection.id,
+              title: lessonSection.title,
+              progress: 0,
               status: 'generating',
-            });
-
-            let previousSummary = "";
-
-            const lessonSectionsPerLesson = createdLessonSections.filter(section => section.lesson_id.toString() === lesson.id.toString());
-            if (lessonSectionsPerLesson.length > 0) {
-              for (let j = 0; j < lessonSectionsPerLesson.length; j++) {
-                await this.lessonSectionsService.update(lessonSectionsPerLesson[j].id, {
-                  status: 'generating',
-                });
-
-                const lessonSectionInstructions = String.raw`
-                  You are an expert content creator. Given the lesson title, previous section summary, section title, and topics, create detailed content for the lesson section.
-                  The content should be tailored for a ${params.difficulty} difficulty level.
-                  Ensure the content is informative, engaging, and covers all topics provided.
-                  Additionally, provide a concise summary of the section content for future reference.
-                  Provide the response in the specified structured format.
-                `;
-                const lessonSectionContent = `Lesson Title: ${lesson.title}\nSection Title: ${lessonSectionsPerLesson[j].title}\n\nTopics:\n${lessonSectionsPerLesson[j].topics.join(", ")}\n\nPrevious Summary:\n${previousSummary}`;
-
-                const lessonSectionResponse = await this.generateWithStructure(
-                  lessonSectionInstructions,
-                  lessonSectionContent,
-                  this.lessonSectionSchema,
-                  "lesson_sections"
-                );
-
-                const lessonSectionOutput = lessonSectionResponse.output_parsed;
-                if (lessonSectionOutput) {
-                  const updatedLessonSection = await this.lessonSectionsService.update(lessonSectionsPerLesson[j].id, {
-                    content: lessonSectionOutput.content,
-                    summary: lessonSectionOutput.summary,
-                    status: 'ready',
-                  });
-
-                  previousSummary = updatedLessonSection ? updatedLessonSection.summary : "";
-                }
-
-                await this.lessonsService.update(lesson.id, {
-                  status: 'ready',
-                });
-
-                totalItemsProcessed++;
-
-                currentProgress = (totalItemsProcessed / createdLessonSections.length) * 100;
-                generationProgress = {
-                  progress: currentProgress,
-                  message: 'Generated ' + totalItemsProcessed + ' of ' + createdLessonSections.length,
-                };
-                socket.emit('generation-progress', generationProgress);
-              }
-            }
-          }
-
-          const lessons = await this.lessonsService.findByCourseId(createdCourse.id);
-
-          await this.coursesService.update(createdCourse.id, {
-            total_lessons: lessons.length,
+            }))
           });
-
-          generationProgress = {
-            progress: currentProgress,
-            message: 'Lesson content generation completed. Starting quiz generation...',
-          };
-          socket.emit('generation-progress', generationProgress);
-
-          currentProgress = 0;
+          socket.emit('generation-progress', fullCourseGenerationProgress);
 
           const createdQuiz = await this.quizzesService.create({
             course_id: createdCourse.id,
@@ -680,28 +653,80 @@ export class CourseGeneratorGateway {
             return;
           }
 
-          generationProgress = {
-            progress: currentProgress,
-            message: 'A quiz has been created. Starting quiz items generation...',
-          };
-          socket.emit('generation-progress', generationProgress);
+          fullCourseGenerationProgress.quizzes[0] = {
+            id: createdQuiz.id,
+            progress: 0,
+            status: 'generating',
+            quiz_items: [],
+          }
+          socket.emit('generation-progress', fullCourseGenerationProgress);
 
-          let totalQuizItems = 0;
-          totalItemsProcessed = 0;
+          const allLessonSections: Array<{
+            lesson: LessonDocument;
+            lessonSection: LessonSectionDocument;
+            lessonSectionPreviousSummary: string
+          }> = [];
 
-          let overallTotalLessonSections = 0;
-          for (let i = 0; i < lessons.length; i++) {
-            const lesson = lessons[i];
-            const lessonSections = await this.lessonSectionsService.findByLessonId(lesson.id);
-            overallTotalLessonSections += lessonSections.length;
+          for (const createdLesson of createdLessons) {
+            const lessonSections = await this.lessonSectionsService.findByLessonId(createdLesson.id);
+
+            let previousSummary = "";
+            for (const lessonSection of lessonSections) {
+              allLessonSections.push({
+                lesson: createdLesson,
+                lessonSection: lessonSection,
+                lessonSectionPreviousSummary: previousSummary
+              });
+              previousSummary = lessonSection.summary || "";
+            }
           }
 
-          for (let i = 0; i < lessons.length; i++) {
-            const lesson = lessons[i];
-            const lessonSections = await this.lessonSectionsService.findByLessonId(lesson.id);
+          const lessonSectionsAndQuizItemsGeneration = allLessonSections.map(async ({ lesson, lessonSection, lessonSectionPreviousSummary }) => {
+            await this.lessonSectionsService.update(lessonSection.id, {
+              status: 'generating',
+            });
 
-            for (let j = 0; j < lessonSections.length; j++) {
-              const lessonSection = lessonSections[j];
+            const lessonSectionInstructions = String.raw`
+              You are an expert content creator. Given the lesson title, previous section summary, section title, and topics, create detailed content for the lesson section.
+              The content should be tailored for a ${params.difficulty} difficulty level.
+              Ensure the content is informative, engaging, and covers all topics provided.
+              Additionally, provide a concise summary of the section content for future reference.
+              Provide the response in the specified structured format.
+            `;
+            const lessonSectionContent = `Lesson Title: ${lesson.title}\nSection Title: ${lessonSection.title}\n\nTopics:\n${lessonSection.topics.join(", ")}\n\nPrevious Summary:\n${lessonSectionPreviousSummary}`;
+
+            const lessonSectionResponse = await this.generateWithStructure(
+              lessonSectionInstructions,
+              lessonSectionContent,
+              this.lessonSectionSchema,
+              "lesson_sections"
+            );
+
+            const lessonSectionOutput = lessonSectionResponse.output_parsed;
+            if (lessonSectionOutput) {
+              await this.lessonSectionsService.update(lessonSection.id, {
+                content: lessonSectionOutput.content,
+                summary: lessonSectionOutput.summary,
+                status: 'ready',
+              });
+
+              const lessonSections = await this.lessonSectionsService.findByLessonId(lesson.id);
+              const notReadyLessonSections = lessonSections.filter(section => section.status !== 'ready');
+              if (notReadyLessonSections.length === 0) {
+                await this.lessonsService.update(lesson.id, {
+                  status: 'ready',
+                });
+              }
+
+              const progressLesson = fullCourseGenerationProgress.lessons.find(l => l.id.toString() === lesson.id.toString());
+              if (progressLesson) {
+                const progressLessonSection = progressLesson.lesson_sections.find(ls => ls.id.toString() === lessonSection.id.toString());
+                if (progressLessonSection) {
+                  progressLessonSection.progress = 100;
+                  progressLessonSection.status = 'generated';
+                }
+              }
+              socket.emit('generation-progress', fullCourseGenerationProgress);
 
               const quizItemsInstructions = String.raw`
                 You are an expert quiz creator. Based on the course title and description provided, create a set of at least 5 to 10 quiz items. 
@@ -710,7 +735,7 @@ export class CourseGeneratorGateway {
                 Ensure the quiz items are well-structured and effectively assess knowledge of the subject.
                 Provide the response in the specified structured format.
               `;
-              const quizItemsContent = `Course Title: ${lesson.title}\nCourse Description: ${courseOutput.description}\n\nLesson Title: ${lesson.title}\nLesson Description: ${lesson.description}\n\nLesson Section Title: ${lessonSection.title}\nLesson Section Content:\n${lessonSection.content}`;
+              const quizItemsContent = `Course Title: ${createdCourse.title}\nCourse Description: ${createdCourse.description}\n\nLesson Title: ${lesson.title}\nLesson Description: ${lesson.description}\n\nLesson Section Title: ${lessonSection.title}\nLesson Section Content:\n${lessonSectionOutput.content}`;
 
               const quizItemsResponse = await this.generateWithStructure(
                 quizItemsInstructions,
@@ -720,60 +745,57 @@ export class CourseGeneratorGateway {
               );
 
               const quizItemsOutput = quizItemsResponse.output_parsed;
-              if (!quizItemsOutput) {
-                socket.emit('error', 'Failed to parse quiz items output.');
-                return;
+              if (quizItemsOutput) {
+                const createdQuizItems = await this.quizItemsService.createMany(
+                  quizItemsOutput.items.map(item => ({
+                    quiz_id: createdQuiz.id,
+                    type: 'multiple_choice',
+                    question: item.question,
+                    options: item.options,
+                    correct_answer: item.correct_answer,
+                    answer_explanation: '',
+                    status: 'ready',
+                  }))
+                );
+
+                if (createdQuizItems && createdQuizItems.length > 0) {
+                  fullCourseGenerationProgress.quizzes[0].quiz_items.push(...createdQuizItems.map(quizItem => ({
+                    id: quizItem.id,
+                    question: quizItem.question,
+                    progress: 100,
+                    status: 'generated',
+                  })));
+
+                  fullCourseGenerationProgress.quizzes[0].progress = (fullCourseGenerationProgress.quizzes[0].quiz_items.length / createdQuizItems.length) * 100;
+                  if (fullCourseGenerationProgress.quizzes[0].progress === 100) {
+                    fullCourseGenerationProgress.quizzes[0].status = 'generated';
+                  }
+
+                  socket.emit('generation-progress', fullCourseGenerationProgress);
+                }
               }
-
-              const createdQuizItems = await this.quizItemsService.createMany(
-                quizItemsOutput.items.map(item => ({
-                  quiz_id: createdQuiz.id,
-                  type: 'multiple_choice',
-                  question: item.question,
-                  options: item.options,
-                  correct_answer: item.correct_answer,
-                  answer_explanation: '',
-                  status: 'ready',
-                }))
-              );
-
-              if (!createdQuizItems || createdQuizItems.length === 0) {
-                socket.emit('error', 'Failed to create quiz item records.');
-                return;
-              }
-
-              totalQuizItems += createdQuizItems.length;
-              totalItemsProcessed++;
-
-              currentProgress = (totalItemsProcessed / overallTotalLessonSections) * 100;
-              generationProgress = {
-                progress: currentProgress,
-                message: 'Generated ' + totalItemsProcessed + ' of ' + overallTotalLessonSections,
-              };
-              socket.emit('generation-progress', generationProgress);
             }
-          }
+          });
 
+          await Promise.all(lessonSectionsAndQuizItemsGeneration);
+
+          const quizItems = await this.quizItemsService.findByQuizId(createdQuiz.id);
           await this.quizzesService.update(createdQuiz.id, {
-            total_items: totalQuizItems,
+            total_items: quizItems.length,
             status: 'ready',
           });
 
+          const lessons = await this.lessonsService.findByCourseId(createdCourse.id);
           const quizzes = await this.quizzesService.findByCourseId(createdCourse.id);
 
           await this.coursesService.update(createdCourse.id, {
+            total_lessons: lessons.length,
             total_quizzes: quizzes.length,
             status: 'ready',
           });
 
-          generationProgress = {
-            progress: currentProgress,
-            message: 'Generation completed successfully.',
-          };
-          socket.emit('generation-progress', generationProgress);
-
           const generationComplete: GenerationComplete = {
-            progress: currentProgress,
+            progress: 100,
             course_id: createdCourse.id,
           };
           socket.emit('generation-complete', generationComplete);
@@ -788,7 +810,7 @@ export class CourseGeneratorGateway {
       }
 
       const generationProgress: GenerationProgress = {
-        progress: currentProgress,
+        progress: 100,
         message: 'Generation completed successfully.',
       };
       socket.emit('generation-progress', generationProgress);
