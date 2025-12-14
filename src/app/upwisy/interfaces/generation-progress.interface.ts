@@ -1,14 +1,3 @@
-export interface GenerationProgress {
-  progress: number;
-  message: string;
-}
-
-export interface GenerationComplete {
-  progress: number;
-  course_id: string;
-}
-
-
 export interface FullCourseGenerationProgress {
   course: {
     id: string;
@@ -39,4 +28,28 @@ export interface FullCourseGenerationProgress {
       status: string;
     }[]
   }[]
+}
+
+export interface QuizOnlyGenerationProgress {
+  course: {
+    id: string;
+    title: string;
+    progress: number;
+    status: string;
+  };
+  quiz: {
+    id: string;
+    progress: number;
+    status: string;
+    quiz_items: {
+      id: string;
+      question: string;
+      progress: number;
+      status: string;
+    }[]
+  }
+}
+
+export interface GenerationComplete {
+  course_id: string;
 }

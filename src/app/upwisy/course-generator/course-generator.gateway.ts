@@ -1,5 +1,5 @@
 import { WebSocketGateway, WebSocketServer, SubscribeMessage, ConnectedSocket, MessageBody } from '@nestjs/websockets';
-import { Logger, UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 
 import { Server, Socket } from 'socket.io';
 
@@ -10,7 +10,7 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 import { GenerateCourseDto, GenerateFullCourseDto, GenerateQuizOnlyCourseDto } from './dto/generate-course.dto';
-import { GenerationProgress, GenerationComplete, FullCourseGenerationProgress } from './../interfaces/generation-progress.interface';
+import { GenerationComplete, FullCourseGenerationProgress, QuizOnlyGenerationProgress } from './../interfaces/generation-progress.interface';
 
 import { UpwisyService } from '../upwisy.service';
 import { CoursesService } from './../../courses/courses.service';
@@ -173,8 +173,7 @@ export class CourseGeneratorGateway {
         progress: 0,
         status: 'generating',
       };
-      socket.emit('generation-progress', fullCourseGenerationProgress);
-      Logger.log(fullCourseGenerationProgress);
+      socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
 
       switch (params.source.value) {
         case "file": {
@@ -233,8 +232,7 @@ export class CourseGeneratorGateway {
             progress: 100,
             status: 'generated',
           };
-          socket.emit('generation-progress', fullCourseGenerationProgress);
-          Logger.log(fullCourseGenerationProgress);
+          socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
 
           const lessonAndSectionsGenerationPerFileContent = fileContents.map(async ({ content }) => {
             const lessonInstructions = String.raw`
@@ -307,8 +305,7 @@ export class CourseGeneratorGateway {
             status: 'generating',
             lesson_sections: [],
           }));
-          socket.emit('generation-progress', fullCourseGenerationProgress);
-          Logger.log(fullCourseGenerationProgress);
+          socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
 
           const createdLessonSections: LessonSectionDocument[] = [];
           for (let i = 0; i < createdLessons.length; i++) {
@@ -330,8 +327,7 @@ export class CourseGeneratorGateway {
               status: 'generating',
             }))
           });
-          socket.emit('generation-progress', fullCourseGenerationProgress);
-          Logger.log(fullCourseGenerationProgress);
+          socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
 
           const createdQuiz = await this.quizzesService.create({
             course_id: createdCourse.id,
@@ -350,8 +346,7 @@ export class CourseGeneratorGateway {
             status: 'generating',
             quiz_items: [],
           }
-          socket.emit('generation-progress', fullCourseGenerationProgress);
-          Logger.log(fullCourseGenerationProgress);
+          socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
 
           const allLessonSections: Array<{
             lesson: LessonDocument;
@@ -418,8 +413,7 @@ export class CourseGeneratorGateway {
                   progressLessonSection.status = 'generated';
                 }
               }
-              socket.emit('generation-progress', fullCourseGenerationProgress);
-              Logger.log(fullCourseGenerationProgress);
+              socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
 
               const quizItemsInstructions = String.raw`
                 You are an expert quiz creator. Based on the course title and description provided, create a set of at least 5 to 10 quiz items. 
@@ -464,8 +458,7 @@ export class CourseGeneratorGateway {
                     fullCourseGenerationProgress.quizzes[0].status = 'generated';
                   }
 
-                  socket.emit('generation-progress', fullCourseGenerationProgress);
-                  Logger.log(fullCourseGenerationProgress);
+                  socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
                 }
               }
             }
@@ -489,7 +482,6 @@ export class CourseGeneratorGateway {
           });
 
           const generationComplete: GenerationComplete = {
-            progress: 100,
             course_id: createdCourse.id,
           };
           socket.emit('generation-complete', generationComplete);
@@ -545,7 +537,7 @@ export class CourseGeneratorGateway {
             progress: 100,
             status: 'generated',
           };
-          socket.emit('generation-progress', fullCourseGenerationProgress);
+          socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
           const lessonsInstructions = String.raw`
             You are an expert course designer. Based on the course title and description provided, create a detailed list of lessons. 
@@ -593,7 +585,7 @@ export class CourseGeneratorGateway {
             status: 'generating',
             lesson_sections: [],
           }));
-          socket.emit('generation-progress', fullCourseGenerationProgress);
+          socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
           const generatedLessonSections: CreateLessonSectionDto[] = [];
           for (let i = 0; i < createdLessons.length; i++) {
@@ -640,7 +632,7 @@ export class CourseGeneratorGateway {
               status: 'generating',
             }))
           });
-          socket.emit('generation-progress', fullCourseGenerationProgress);
+          socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
           const createdQuiz = await this.quizzesService.create({
             course_id: createdCourse.id,
@@ -659,7 +651,7 @@ export class CourseGeneratorGateway {
             status: 'generating',
             quiz_items: [],
           }
-          socket.emit('generation-progress', fullCourseGenerationProgress);
+          socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
           const allLessonSections: Array<{
             lesson: LessonDocument;
@@ -726,7 +718,7 @@ export class CourseGeneratorGateway {
                   progressLessonSection.status = 'generated';
                 }
               }
-              socket.emit('generation-progress', fullCourseGenerationProgress);
+              socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
               const quizItemsInstructions = String.raw`
                 You are an expert quiz creator. Based on the course title and description provided, create a set of at least 5 to 10 quiz items. 
@@ -771,7 +763,7 @@ export class CourseGeneratorGateway {
                     fullCourseGenerationProgress.quizzes[0].status = 'generated';
                   }
 
-                  socket.emit('generation-progress', fullCourseGenerationProgress);
+                  socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
                 }
               }
             }
@@ -795,7 +787,6 @@ export class CourseGeneratorGateway {
           });
 
           const generationComplete: GenerationComplete = {
-            progress: 100,
             course_id: createdCourse.id,
           };
           socket.emit('generation-complete', generationComplete);
@@ -808,12 +799,6 @@ export class CourseGeneratorGateway {
           break;
         }
       }
-
-      const generationProgress: GenerationProgress = {
-        progress: 100,
-        message: 'Generation completed successfully.',
-      };
-      socket.emit('generation-progress', generationProgress);
     } catch (error) {
       socket.emit('error', 'An Error Occurred: ' + error.message);
       return;
@@ -826,13 +811,28 @@ export class CourseGeneratorGateway {
     userId: string
   ) {
     try {
-      let currentProgress = 0;
-
-      let generationProgress: GenerationProgress = {
-        progress: currentProgress,
-        message: 'Starting generation process...',
+      const quizOnlyCourseGenerationProgress: QuizOnlyGenerationProgress = {
+        course: {
+          id: '',
+          title: '',
+          progress: 0,
+          status: '',
+        },
+        quiz: {
+          id: '',
+          progress: 0,
+          status: '',
+          quiz_items: []
+        },
       };
-      socket.emit('generation-progress', generationProgress);
+
+      quizOnlyCourseGenerationProgress.course = {
+        id: '',
+        title: '',
+        progress: 0,
+        status: 'generating',
+      };
+      socket.emit('quiz-only-course-generation-progress', quizOnlyCourseGenerationProgress);
 
       const fileContents = await this.fileContentsService.findByFileId(params.file_id);
       if (!fileContents || fileContents.length === 0) {
@@ -884,6 +884,14 @@ export class CourseGeneratorGateway {
         return;
       }
 
+      quizOnlyCourseGenerationProgress.course = {
+        id: createdCourse.id,
+        title: createdCourse.title,
+        progress: 100,
+        status: 'generated',
+      };
+      socket.emit('quiz-only-course-generation-progress', quizOnlyCourseGenerationProgress);
+
       const createdQuiz = await this.quizzesService.create({
         course_id: createdCourse.id,
         total_items: 0,
@@ -895,18 +903,15 @@ export class CourseGeneratorGateway {
         return;
       }
 
-      generationProgress = {
-        progress: currentProgress,
-        message: 'A course and quiz have been created. Starting quiz items generation...',
-      };
-      socket.emit('generation-progress', generationProgress);
+      quizOnlyCourseGenerationProgress.quiz = {
+        id: createdQuiz.id,
+        progress: 0,
+        status: 'generating',
+        quiz_items: [],
+      }
+      socket.emit('quiz-only-course-generation-progress', quizOnlyCourseGenerationProgress);
 
-      let totalQuizItems = 0;
-      let totalItemsProcessed = 0;
-
-      for (let i = 0; i < fileContents.length; i++) {
-        const fileContent = fileContents[i];
-
+      const quizItemsGenerationPerFileContent = fileContents.map(async ({ content }) => {
         const quizItemsInstructions = String.raw`
           You are an expert quiz creator. Based on the course title and description provided, create a set of at least 5 to 10 quiz items. 
           Each quiz item should have a number, question, multiple options, and the correct answer.
@@ -914,7 +919,7 @@ export class CourseGeneratorGateway {
           Ensure the quiz items are well-structured and effectively assess knowledge of the subject.
           Provide the response in the specified structured format.
         `;
-        const quizItemsContent = `Course Title: ${courseOutput.title}\nCourse Description: ${courseOutput.description}\n\nFile Content:\n${fileContent.content}`;
+        const quizItemsContent = `Course Title: ${courseOutput.title}\nCourse Description: ${courseOutput.description}\n\nFile Content:\n${content}`;
 
         const quizItemsResponse = await this.generateWithStructure(
           quizItemsInstructions,
@@ -924,59 +929,52 @@ export class CourseGeneratorGateway {
         );
 
         const quizItemsOutput = quizItemsResponse.output_parsed;
-        if (!quizItemsOutput) {
-          socket.emit('error', 'Failed to parse quiz items output.');
-          return;
+        if (quizItemsOutput) {
+          const createdQuizItems = await this.quizItemsService.createMany(
+            quizItemsOutput.items.map(item => ({
+              quiz_id: createdQuiz.id,
+              type: 'multiple_choice',
+              question: item.question,
+              options: item.options,
+              correct_answer: item.correct_answer,
+              answer_explanation: '',
+              status: 'ready',
+            }))
+          );
+
+          if (createdQuizItems && createdQuizItems.length > 0) {
+            quizOnlyCourseGenerationProgress.quiz.quiz_items.push(...createdQuizItems.map(quizItem => ({
+              id: quizItem.id,
+              question: quizItem.question,
+              progress: 100,
+              status: 'generated',
+            })));
+
+            quizOnlyCourseGenerationProgress.quiz.progress = (quizOnlyCourseGenerationProgress.quiz.quiz_items.length / createdQuizItems.length) * 100;
+            if (quizOnlyCourseGenerationProgress.quiz.progress === 100) {
+              quizOnlyCourseGenerationProgress.quiz.status = 'generated';
+            }
+
+            socket.emit('quiz-only-course-generation-progress', quizOnlyCourseGenerationProgress);
+          }
         }
+      });
 
-        const createdQuizItems = await this.quizItemsService.createMany(
-          quizItemsOutput.items.map(item => ({
-            quiz_id: createdQuiz.id,
-            type: 'multiple_choice',
-            question: item.question,
-            options: item.options,
-            correct_answer: item.correct_answer,
-            answer_explanation: '',
-            status: 'ready',
-          }))
-        );
+      await Promise.all(quizItemsGenerationPerFileContent);
 
-        if (!createdQuizItems || createdQuizItems.length === 0) {
-          socket.emit('error', 'Failed to create quiz item records.');
-          return;
-        }
-
-        totalQuizItems += createdQuizItems.length;
-        totalItemsProcessed++;
-
-        currentProgress = (totalItemsProcessed / fileContents.length) * 100;
-        generationProgress = {
-          progress: currentProgress,
-          message: 'Generated ' + totalItemsProcessed + ' of ' + fileContents.length,
-        };
-        socket.emit('generation-progress', generationProgress);
-      }
-
+      const quizItems = await this.quizItemsService.findByQuizId(createdQuiz.id);
       await this.quizzesService.update(createdQuiz.id, {
-        total_items: totalQuizItems,
+        total_items: quizItems.length,
         status: 'ready',
       });
 
       const quizzes = await this.quizzesService.findByCourseId(createdCourse.id);
-
       await this.coursesService.update(createdCourse.id, {
         total_quizzes: quizzes.length,
         status: 'ready',
       });
 
-      generationProgress = {
-        progress: currentProgress,
-        message: 'Generation completed successfully.',
-      };
-      socket.emit('generation-progress', generationProgress);
-
       const generationComplete: GenerationComplete = {
-        progress: currentProgress,
         course_id: createdCourse.id,
       };
       socket.emit('generation-complete', generationComplete);
