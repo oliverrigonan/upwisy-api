@@ -30,7 +30,7 @@ export interface FullCourseGenerationProgress {
   }[]
 }
 
-export interface QuizOnlyGenerationProgress {
+export interface QuizOnlyCourseGenerationProgress {
   course: {
     id: string;
     title: string;

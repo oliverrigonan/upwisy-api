@@ -10,7 +10,7 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 import { GenerateCourseDto, GenerateFullCourseDto, GenerateQuizOnlyCourseDto } from './dto/generate-course.dto';
-import { GenerationComplete, FullCourseGenerationProgress, QuizOnlyGenerationProgress } from './../interfaces/generation-progress.interface';
+import { GenerationComplete, FullCourseGenerationProgress, QuizOnlyCourseGenerationProgress } from './../interfaces/generation-progress.interface';
 
 import { UpwisyService } from '../upwisy.service';
 import { CoursesService } from './../../courses/courses.service';
@@ -173,7 +173,7 @@ export class CourseGeneratorGateway {
         progress: 0,
         status: 'generating',
       };
-      socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
+      socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
       switch (params.source.value) {
         case "file": {
@@ -232,7 +232,7 @@ export class CourseGeneratorGateway {
             progress: 100,
             status: 'generated',
           };
-          socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
+          socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
           const lessonAndSectionsGenerationPerFileContent = fileContents.map(async ({ content }) => {
             const lessonInstructions = String.raw`
@@ -305,7 +305,7 @@ export class CourseGeneratorGateway {
             status: 'generating',
             lesson_sections: [],
           }));
-          socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
+          socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
           const createdLessonSections: LessonSectionDocument[] = [];
           for (let i = 0; i < createdLessons.length; i++) {
@@ -327,7 +327,7 @@ export class CourseGeneratorGateway {
               status: 'generating',
             }))
           });
-          socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
+          socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
           const createdQuiz = await this.quizzesService.create({
             course_id: createdCourse.id,
@@ -346,7 +346,7 @@ export class CourseGeneratorGateway {
             status: 'generating',
             quiz_items: [],
           }
-          socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
+          socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
           const allLessonSections: Array<{
             lesson: LessonDocument;
@@ -413,7 +413,7 @@ export class CourseGeneratorGateway {
                   progressLessonSection.status = 'generated';
                 }
               }
-              socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
+              socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
 
               const quizItemsInstructions = String.raw`
                 You are an expert quiz creator. Based on the course title and description provided, create a set of at least 5 to 10 quiz items. 
@@ -458,7 +458,7 @@ export class CourseGeneratorGateway {
                     fullCourseGenerationProgress.quizzes[0].status = 'generated';
                   }
 
-                  socket.emit('full-course-full-course-generation-progress', fullCourseGenerationProgress);
+                  socket.emit('full-course-generation-progress', fullCourseGenerationProgress);
                 }
               }
             }
@@ -811,7 +811,7 @@ export class CourseGeneratorGateway {
     userId: string
   ) {
     try {
-      const quizOnlyCourseGenerationProgress: QuizOnlyGenerationProgress = {
+      const quizOnlyCourseGenerationProgress: QuizOnlyCourseGenerationProgress = {
         course: {
           id: '',
           title: '',
